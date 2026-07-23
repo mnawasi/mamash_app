@@ -14,6 +14,7 @@ import 'transaction_history_page.dart';
 import 'notification_page.dart';
 import 'profile_page.dart';
 import 'wallet_page.dart';
+import 'cards/cards_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -23,11 +24,6 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  // TODO: Replace with the actual wallet balance from your state
-  // management / backend (e.g. a Provider, Bloc, or Riverpod source), so
-  // this stays in sync with AirtimePage, BuyDataPage, BettingPage,
-  // BillPaymentPage, and WalletPage instead of each showing its own
-  // independent ₦0.00.
   static const double _walletBalance = 0.00;
 
   bool _balanceHidden = false;
@@ -45,7 +41,6 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _bgColor,
-
       appBar: AppBar(
         backgroundColor: _bgColor,
         elevation: 0,
@@ -72,13 +67,11 @@ class _DashboardPageState extends State<DashboardPage> {
           const SizedBox(width: 4),
         ],
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(15, 0, 15, 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -129,9 +122,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 10),
-
                   Text(
                     _balanceHidden
                         ? "₦ ****"
@@ -142,9 +133,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       color: Colors.white,
                     ),
                   ),
-
                   const SizedBox(height: 18),
-
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -162,7 +151,6 @@ class _DashboardPageState extends State<DashboardPage> {
                         Icons.arrow_downward,
                         "Withdraw",
                         () {
-                          // TODO: Point this to a real WithdrawPage once built.
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text("Withdraw coming soon...")),
                           );
@@ -173,9 +161,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 ],
               ),
             ),
-
             const SizedBox(height: 12),
-
             GestureDetector(
               onTap: () => _goTo(const AddMoneyPage()),
               child: Container(
@@ -200,9 +186,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
               ),
             ),
-
             const SizedBox(height: 25),
-
             const Text(
               "Quick services",
               style: TextStyle(
@@ -211,9 +195,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 color: Colors.white,
               ),
             ),
-
             const SizedBox(height: 15),
-
             GridView.count(
               crossAxisCount: 4,
               shrinkWrap: true,
@@ -234,7 +216,6 @@ class _DashboardPageState extends State<DashboardPage> {
           ],
         ),
       ),
-
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedNavIndex,
         onTap: (index) {
@@ -242,12 +223,11 @@ class _DashboardPageState extends State<DashboardPage> {
             _selectedNavIndex = index;
           });
 
-          if (index == 4) {
+          if (index == 3) {
+            _goTo(const CardsPage());
+          } else if (index == 4) {
             _goTo(const ProfilePage());
           }
-
-          // TODO: Wire Rewards / Finance / Cards tabs to real pages once
-          // they exist. For now only Home and Me (Profile) do anything.
         },
         backgroundColor: _bgColor,
         selectedItemColor: _accent,
