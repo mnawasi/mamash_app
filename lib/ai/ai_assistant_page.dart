@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'offline_ai_service.dart';
 
 class ChatMessage {
   final String text;
@@ -66,16 +67,23 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
     _scrollToBottom();
 
     try {
-      // TODO: Replace with a real call to YOUR OWN BACKEND endpoint,
-      // which in turn calls an LLM provider (e.g. the Anthropic API).
-      // Never call an AI provider's API directly from the Flutter app
-      // with an embedded API key — that key would be extractable from
-      // the compiled app binary by anyone. The correct shape is:
+      // Using the local, offline keyword-matching responder for now.
+      //
+      // TODO: Once ready, replace this with a real call to YOUR OWN
+      // BACKEND endpoint, which in turn calls an LLM provider (e.g. the
+      // Anthropic API). Never call an AI provider's API directly from
+      // the Flutter app with an embedded API key — that key would be
+      // extractable from the compiled app binary by anyone. The correct
+      // shape is:
       //   Flutter app -> your backend (auth-checked) -> AI provider
       // Your backend can also inject the user's real account context
       // (recent transactions, balance) so answers are personalized,
       // without ever exposing that data or your API key client-side.
-      final reply = await _getPlaceholderReply(text);
+      //
+      // A short artificial delay keeps the typing indicator feeling
+      // natural rather than the reply appearing instantly.
+      await Future.delayed(const Duration(milliseconds: 600));
+      final reply = OfflineAIService.getResponse(text);
 
       if (!mounted) return;
 
@@ -101,15 +109,6 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
 
       _scrollToBottom();
     }
-  }
-
-  Future<String> _getPlaceholderReply(String userMessage) async {
-    // TODO: Delete this placeholder once _sendMessage calls your real
-    // backend endpoint above.
-    await Future.delayed(const Duration(milliseconds: 900));
-    return "Mamash AI isn't connected to a real backend yet, so I can't "
-        "actually answer that. Once the AI backend is wired up, I'll be "
-        "able to help with real questions about your account.";
   }
 
   @override
