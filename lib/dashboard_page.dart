@@ -15,6 +15,7 @@ import 'notification_page.dart';
 import 'profile_page.dart';
 import 'wallet_page.dart';
 import 'cards/cards_page.dart';
+import 'finance_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -125,8 +126,8 @@ class _DashboardPageState extends State<DashboardPage> {
                   const SizedBox(height: 10),
                   Text(
                     _balanceHidden
-                        ? "₦ ****"
-                        : "₦${_walletBalance.toStringAsFixed(2)}",
+                        ? "\u20a6 ****"
+                        : "\u20a6${_walletBalance.toStringAsFixed(2)}",
                     style: const TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
@@ -223,7 +224,9 @@ class _DashboardPageState extends State<DashboardPage> {
             _selectedNavIndex = index;
           });
 
-          if (index == 3) {
+          if (index == 2) {
+            _goTo(const FinancePage());
+          } else if (index == 3) {
             _goTo(const CardsPage());
           } else if (index == 4) {
             _goTo(const ProfilePage());
