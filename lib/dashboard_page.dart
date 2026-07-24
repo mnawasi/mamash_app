@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'rewards/rewards_page.dart';
 
 import 'send_money_page.dart';
 import 'receive_money_page.dart';
@@ -224,7 +225,9 @@ class _DashboardPageState extends State<DashboardPage> {
             _selectedNavIndex = index;
           });
 
-          if (index == 2) {
+          if (index == 1) {
+            _goTo(const RewardsPage());
+          } else if (index == 2) {
             _goTo(const FinancePage());
           } else if (index == 3) {
             _goTo(const CardsPage());

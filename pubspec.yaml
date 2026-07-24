@@ -42,6 +42,7 @@ dependencies:
   share_plus: ^13.2.1
   qr_flutter: ^4.1.0
   camera: ^0.12.0+2
+  mobile_scanner: ^7.4.0
 
 dev_dependencies:
   flutter_test:
@@ -64,6 +65,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/images/mamash_logo.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -8,261 +8,299 @@ class InternationalTransferPage extends StatefulWidget {
 }
 
 class _InternationalTransferPageState extends State<InternationalTransferPage> {
-  final TextEditingController recipientNameController = TextEditingController();
-  final TextEditingController recipientAccountController = TextEditingController();
-  final TextEditingController amountController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
+  String _selectedCountry = 'United States';
+  String _selectedCurrency = 'USD';
+  final TextEditingController _recipientNameController = TextEditingController();
+  final TextEditingController _accountNumberController = TextEditingController();
+  final TextEditingController _amountController = TextEditingController();
 
-  String? selectedCountry;
-  String? selectedCurrency;
-  bool _isLoading = false;
+  static const Color _bgDark = Color(0xFF121212);
+  static const Color _cardDark = Color(0xFF1E1E1E);
+  static const Color _accentGreen = Color(0xFF1DBF8A);
 
-  // TODO: Replace with the actual wallet balance from your state
-  // management / backend (e.g. a Provider, Bloc, or Riverpod source).
-  final double _walletBalance = 0.00;
+  final List<Map<String, String>> _countries = [
+    {'name': 'United States', 'currency': 'USD', 'flag': '🇺🇸', 'rate': '1,530.00'},
+    {'name': 'United Kingdom', 'currency': 'GBP', 'flag': '🇬🇧', 'rate': '1,950.00'},
+    {'name': 'Canada', 'currency': 'CAD', 'flag': '🇨🇦', 'rate': '1,120.00'},
+    {'name': 'Ghana', 'currency': 'GHS', 'flag': '🇬🇭', 'rate': '105.00'},
+  ];
 
-  // TODO: Replace with your real supported corridors. Each country should
-  // map to the currency you actually settle in for that corridor.
-  final Map<String, String> countryToCurrency = {
-    "United States": "USD",
-    "United Kingdom": "GBP",
-    "Canada": "CAD",
-    "Ghana": "GHS",
-    "South Africa": "ZAR",
-  };
+  Map<String, String> get _currentCountry =>
+      _countries.firstWhere((c) => c['name'] == _selectedCountry);
 
   @override
   void dispose() {
-    recipientNameController.dispose();
-    recipientAccountController.dispose();
-    amountController.dispose();
+    _recipientNameController.dispose();
+    _accountNumberController.dispose();
+    _amountController.dispose();
     super.dispose();
-  }
-
-  String? _validateRecipientName(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return "Please enter the recipient's full name";
-    }
-
-    if (value.trim().split(" ").length < 2) {
-      return "Enter the recipient's full legal name";
-    }
-
-    return null;
-  }
-
-  String? _validateRecipientAccount(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return "Please enter the recipient's account/IBAN number";
-    }
-
-    if (value.trim().length < 6) {
-      return "Enter a valid account number";
-    }
-
-    return null;
-  }
-
-  String? _validateAmount(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return "Please enter an amount";
-    }
-
-    final amount = double.tryParse(value.trim());
-
-    if (amount == null) {
-      return "Enter a valid number";
-    }
-
-    if (amount < 1000) {
-      return "Minimum transfer amount is ₦1,000";
-    }
-
-    if (amount > 2000000) {
-      return "Maximum transfer amount is ₦2,000,000";
-    }
-
-    if (amount > _walletBalance) {
-      return "Insufficient wallet balance";
-    }
-
-    return null;
-  }
-
-  Future<void> _handleContinue() async {
-    if (selectedCountry == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select a destination country")),
-      );
-      return;
-    }
-
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    // TODO: Replace with a real cross-border payment provider integration
-    // (e.g. Flutterwave, Wise Platform, Thunes) via your backend. This
-    // flow will also require KYC checks, sanctions/AML screening, and
-    // FX rate confirmation before any funds move.
-    await Future.delayed(const Duration(seconds: 1));
-
-    if (!mounted) return;
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("International transfers coming soon...")),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
-      appBar: AppBar(
-        title: const Text("International Transfer"),
-        centerTitle: true,
-        backgroundColor: Colors.blue,
+      backgroundColor: _bgDark,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildPromoBanner(),
+                    const SizedBox(height: 16),
+                    _buildCountrySelector(),
+                    const SizedBox(height: 16),
+                    _buildRecipientCard(),
+                    const SizedBox(height: 16),
+                    _buildAmountCard(),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
             children: [
-              Card(
-                elevation: 5,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      const Text(
-                        "Wallet Balance",
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        "₦${_walletBalance.toStringAsFixed(2)}",
-                        style: const TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
               ),
-
-              const SizedBox(height: 25),
-
-              DropdownButtonFormField<String>(
-                initialValue: selectedCountry,
-                decoration: const InputDecoration(
-                  labelText: "Destination Country",
-                  border: OutlineInputBorder(),
-                ),
-                items: countryToCurrency.keys.map((country) {
-                  return DropdownMenuItem(
-                    value: country,
-                    child: Text(country),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    selectedCountry = value;
-                    selectedCurrency = value != null ? countryToCurrency[value] : null;
-                  });
-                },
-              ),
-
-              if (selectedCurrency != null) ...[
-                const SizedBox(height: 10),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "Recipient will receive funds in $selectedCurrency",
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: 20),
-
-              TextFormField(
-                controller: recipientNameController,
-                keyboardType: TextInputType.name,
-                validator: _validateRecipientName,
-                decoration: const InputDecoration(
-                  labelText: "Recipient Full Name",
-                  border: OutlineInputBorder(),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              TextFormField(
-                controller: recipientAccountController,
-                keyboardType: TextInputType.text,
-                validator: _validateRecipientAccount,
-                decoration: const InputDecoration(
-                  labelText: "Recipient Account/IBAN Number",
-                  border: OutlineInputBorder(),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              TextFormField(
-                controller: amountController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                validator: _validateAmount,
-                decoration: const InputDecoration(
-                  labelText: "Amount to Send",
-                  prefixText: "₦",
-                  border: OutlineInputBorder(),
-                ),
-              ),
-
-              const SizedBox(height: 30),
-
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _handleContinue,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text(
-                          "CONTINUE",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                ),
+              const Text(
+                'International Transfer',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
               ),
             ],
           ),
+          TextButton(
+            onPressed: () {},
+            child: const Text('History', style: TextStyle(color: _accentGreen)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPromoBanner() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F5E9),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          Text(
+            'Send Money Across Borders',
+            style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          SizedBox(height: 4),
+          Text(
+            'Fast, secure transfers at competitive rates',
+            style: TextStyle(color: Colors.black54, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCountrySelector() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _cardDark,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Send to',
+            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: _showCountryPicker,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF262626),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  Text(_currentCountry['flag']!, style: const TextStyle(fontSize: 20)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _selectedCountry,
+                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  const Icon(Icons.expand_more, color: Colors.white54),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF163A2E),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Exchange rate', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                Text(
+                  '1 ${_currentCountry['currency']} = ₦${_currentCountry['rate']}',
+                  style: const TextStyle(color: _accentGreen, fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCountryPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _cardDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: _countries.map((c) {
+              return ListTile(
+                leading: Text(c['flag']!, style: const TextStyle(fontSize: 22)),
+                title: Text(c['name']!, style: const TextStyle(color: Colors.white)),
+                trailing: Text(c['currency']!, style: const TextStyle(color: Colors.white54)),
+                onTap: () {
+                  setState(() {
+                    _selectedCountry = c['name']!;
+                    _selectedCurrency = c['currency']!;
+                  });
+                  Navigator.pop(context);
+                },
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRecipientCard() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _cardDark,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Recipient details',
+            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 10),
+          _labeledField('Recipient name', _recipientNameController),
+          const SizedBox(height: 10),
+          _labeledField('Account / IBAN number', _accountNumberController),
+        ],
+      ),
+    );
+  }
+
+  Widget _labeledField(String label, TextEditingController controller) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF262626),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: TextField(
+        controller: controller,
+        style: const TextStyle(color: Colors.white, fontSize: 14),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: Colors.white54, fontSize: 12),
+          border: InputBorder.none,
         ),
+      ),
+    );
+  }
+
+  Widget _buildAmountCard() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _cardDark,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'You send',
+            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _amountController,
+            keyboardType: TextInputType.number,
+            style: const TextStyle(color: Colors.white, fontSize: 20),
+            decoration: InputDecoration(
+              prefixText: '₦ ',
+              prefixStyle: const TextStyle(color: Colors.white, fontSize: 20),
+              filled: true,
+              fillColor: const Color(0xFF262626),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _accentGreen,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              ),
+              child: const Text('Continue', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+            ),
+          ),
+        ],
       ),
     );
   }

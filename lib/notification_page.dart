@@ -1,21 +1,5 @@
 import 'package:flutter/material.dart';
 
-class NotificationItem {
-  final String title;
-  final String message;
-  final DateTime timestamp;
-  final IconData icon;
-  bool isRead;
-
-  NotificationItem({
-    required this.title,
-    required this.message,
-    required this.timestamp,
-    required this.icon,
-    this.isRead = false,
-  });
-}
-
 class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
 
@@ -24,188 +8,228 @@ class NotificationPage extends StatefulWidget {
 }
 
 class _NotificationPageState extends State<NotificationPage> {
-  // TODO: Replace with real notifications from your backend/state
-  // management (e.g. fetched from Firestore, a REST API, or a push
-  // notification service like Firebase Cloud Messaging). This local list
-  // is a placeholder so the UI has something to render and test against.
-  final List<NotificationItem> _notifications = [];
+  static const Color _bgDark = Color(0xFF121212);
+  static const Color _cardDark = Color(0xFF1E1E1E);
+  static const Color _accentGreen = Color(0xFF1DBF8A);
 
-  bool _isLoading = true;
+  final Map<String, List<Map<String, dynamic>>> _grouped = {
+    'Today': [
+      {
+        'title': 'Money received',
+        'subtitle': 'You received ₦20,000 from Amina Yusuf',
+        'time': '10:24 AM',
+        'icon': Icons.arrow_downward_rounded,
+        'iconColor': _accentGreen,
+        'iconBg': const Color(0xFF163A2E),
+        'read': false,
+      },
+      {
+        'title': 'Cashback earned',
+        'subtitle': 'You earned ₦15 cashback on a data purchase',
+        'time': '10:26 AM',
+        'icon': Icons.card_giftcard,
+        'iconColor': Colors.amber,
+        'iconBg': const Color(0xFF3A2A12),
+        'read': false,
+      },
+    ],
+    'Yesterday': [
+      {
+        'title': 'Bill payment successful',
+        'subtitle': 'Your IKEDC electricity bill of ₦5,000 was paid',
+        'time': '1:18 PM',
+        'icon': Icons.bolt,
+        'iconColor': Colors.lightBlueAccent,
+        'iconBg': const Color(0xFF122A3A),
+        'read': true,
+      },
+      {
+        'title': 'Security alert',
+        'subtitle': 'A new device logged into your account',
+        'time': '8:02 AM',
+        'icon': Icons.shield_outlined,
+        'iconColor': Colors.redAccent,
+        'iconBg': const Color(0xFF3A1212),
+        'read': true,
+      },
+    ],
+    'Jul 20, 2026': [
+      {
+        'title': 'Welcome to Mamash Pay',
+        'subtitle': 'Complete your KYC to unlock higher limits',
+        'time': '9:00 AM',
+        'icon': Icons.info_outline,
+        'iconColor': Colors.purpleAccent,
+        'iconBg': const Color(0xFF2E1636),
+        'read': true,
+      },
+    ],
+  };
 
-  @override
-  void initState() {
-    super.initState();
-    _loadNotifications();
-  }
-
-  Future<void> _loadNotifications() async {
-    // TODO: Replace with a real fetch call.
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    if (!mounted) return;
-
+  void _markAllRead() {
     setState(() {
-      _isLoading = false;
-    });
-  }
-
-  String _formatTimestamp(DateTime timestamp) {
-    final now = DateTime.now();
-    final difference = now.difference(timestamp);
-
-    if (difference.inMinutes < 1) return "Just now";
-    if (difference.inMinutes < 60) return "${difference.inMinutes}m ago";
-    if (difference.inHours < 24) return "${difference.inHours}h ago";
-    if (difference.inDays < 7) return "${difference.inDays}d ago";
-
-    return "${timestamp.day}/${timestamp.month}/${timestamp.year}";
-  }
-
-  void _markAsRead(NotificationItem notification) {
-    setState(() {
-      notification.isRead = true;
-    });
-  }
-
-  void _markAllAsRead() {
-    setState(() {
-      for (final notification in _notifications) {
-        notification.isRead = true;
+      for (final list in _grouped.values) {
+        for (final n in list) {
+          n['read'] = true;
+        }
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final hasUnread = _notifications.any((n) => !n.isRead);
-
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
-      appBar: AppBar(
-        title: const Text("Notifications"),
-        backgroundColor: Colors.blue,
-        actions: [
-          if (hasUnread)
-            TextButton(
-              onPressed: _markAllAsRead,
-              child: const Text(
-                "Mark all read",
-                style: TextStyle(color: Colors.white),
-              ),
+      backgroundColor: _bgDark,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(context),
+            Expanded(
+              child: _grouped.values.every((l) => l.isEmpty)
+                  ? _buildEmptyState()
+                  : ListView(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      children: _grouped.entries
+                          .where((e) => e.value.isNotEmpty)
+                          .map((e) => _buildGroup(e.key, e.value))
+                          .toList(),
+                    ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+              ),
+              const Text(
+                'Notifications',
+                style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          TextButton(
+            onPressed: _markAllRead,
+            child: const Text('Mark all read', style: TextStyle(color: _accentGreen, fontSize: 13)),
+          ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _notifications.isEmpty
-              ? _buildEmptyState()
-              : RefreshIndicator(
-                  onRefresh: _loadNotifications,
-                  child: ListView.separated(
-                    padding: const EdgeInsets.all(12),
-                    itemCount: _notifications.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final notification = _notifications[index];
-                      return _buildNotificationTile(notification);
-                    },
-                  ),
+    );
+  }
+
+  Widget _buildGroup(String label, List<Map<String, dynamic>> items) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Text(label, style: const TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w600)),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: _cardDark,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Column(
+            children: items.asMap().entries.map((entry) {
+              final isLast = entry.key == items.length - 1;
+              return Column(
+                children: [
+                  _notificationTile(entry.value),
+                  if (!isLast) const Divider(color: Colors.white12, height: 1),
+                ],
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+
+  Widget _notificationTile(Map<String, dynamic> n) {
+    final bool read = n['read'] as bool;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: n['iconBg'] as Color,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(n['icon'] as IconData, color: n['iconColor'] as Color, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        n['title'] as String,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: read ? FontWeight.normal : FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    if (!read)
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: _accentGreen,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                  ],
                 ),
+                const SizedBox(height: 3),
+                Text(
+                  n['subtitle'] as String,
+                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  n['time'] as String,
+                  style: const TextStyle(color: Colors.white38, fontSize: 10),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildEmptyState() {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.notifications_none,
-            size: 70,
-            color: Colors.grey.shade400,
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            "No notifications yet",
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            "We'll let you know when something new comes in.",
-            style: TextStyle(color: Colors.grey.shade600),
-          ),
+          Icon(Icons.notifications_none, color: Colors.white24, size: 56),
+          SizedBox(height: 12),
+          Text('No notifications yet', style: TextStyle(color: Colors.white38, fontSize: 14)),
         ],
-      ),
-    );
-  }
-
-  Widget _buildNotificationTile(NotificationItem notification) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: () => _markAsRead(notification),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: notification.isRead ? Colors.white : Colors.blue.shade50,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: notification.isRead ? Colors.grey.shade200 : Colors.blue.shade100,
-          ),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CircleAvatar(
-              backgroundColor: Colors.blue.shade100,
-              child: Icon(notification.icon, color: Colors.blue, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          notification.title,
-                          style: TextStyle(
-                            fontWeight: notification.isRead
-                                ? FontWeight.w500
-                                : FontWeight.bold,
-                            fontSize: 15,
-                          ),
-                        ),
-                      ),
-                      if (!notification.isRead)
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Colors.blue,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    notification.message,
-                    style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _formatTimestamp(notification.timestamp),
-                    style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

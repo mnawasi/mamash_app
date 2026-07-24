@@ -1,262 +1,202 @@
 import 'package:flutter/material.dart';
+import 'electricity_page.dart';
+import 'airtime_page.dart';
+import 'buy_data_page.dart';
 
-class BillPaymentPage extends StatefulWidget {
+class BillPaymentPage extends StatelessWidget {
   const BillPaymentPage({super.key});
 
-  @override
-  State<BillPaymentPage> createState() => _BillPaymentPageState();
-}
-
-class _BillPaymentPageState extends State<BillPaymentPage> {
-  final TextEditingController meterOrCardNumberController = TextEditingController();
-  final TextEditingController amountController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
-
-  String? selectedCategory;
-  String? selectedProvider;
-  bool _isLoading = false;
-
-  // TODO: Replace with the actual wallet balance from your state
-  // management / backend (e.g. a Provider, Bloc, or Riverpod source).
-  final double _walletBalance = 0.00;
-
-  final Map<String, List<String>> providersByCategory = {
-    "Electricity": ["EKEDC", "IKEDC", "AEDC", "PHED", "KEDCO"],
-    "Cable TV": ["DSTV", "GOtv", "Startimes"],
-    "Internet": ["Spectranet", "Smile", "Swift"],
-  };
-
-  List<String> get _availableProviders =>
-      providersByCategory[selectedCategory] ?? [];
-
-  @override
-  void dispose() {
-    meterOrCardNumberController.dispose();
-    amountController.dispose();
-    super.dispose();
-  }
-
-  String? _validateNumber(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return selectedCategory == "Electricity"
-          ? "Please enter your meter number"
-          : "Please enter your smartcard/account number";
-    }
-
-    if (value.trim().length < 5) {
-      return "Enter a valid number";
-    }
-
-    return null;
-  }
-
-  String? _validateAmount(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return "Please enter an amount";
-    }
-
-    final amount = double.tryParse(value.trim());
-
-    if (amount == null) {
-      return "Enter a valid number";
-    }
-
-    if (amount < 100) {
-      return "Minimum payment amount is ₦100";
-    }
-
-    if (amount > 1000000) {
-      return "Maximum payment amount is ₦1,000,000";
-    }
-
-    if (amount > _walletBalance) {
-      return "Insufficient wallet balance";
-    }
-
-    return null;
-  }
-
-  Future<void> _handlePayBill() async {
-    if (selectedCategory == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select a bill category")),
-      );
-      return;
-    }
-
-    if (selectedProvider == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select a provider")),
-      );
-      return;
-    }
-
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    // TODO: Replace with actual bill payment API call. Typically this
-    // involves a "verify" step first (confirm meter/smartcard number and
-    // show the customer's name), then a "pay" step, then handling
-    // success/failure and updating wallet balance.
-    await Future.delayed(const Duration(seconds: 1));
-
-    if (!mounted) return;
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Bill payment coming soon...")),
-    );
-  }
+  static const Color _bgDark = Color(0xFF121212);
+  static const Color _cardDark = Color(0xFF1E1E1E);
+  static const Color _accentGreen = Color(0xFF1DBF8A);
 
   @override
   Widget build(BuildContext context) {
+    final bills = [
+      _BillCategory('Electricity', Icons.lightbulb_outline, const Color(0xFF3A2A12), Colors.amber,
+          () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ElectricityPage()))),
+      _BillCategory('Airtime', Icons.phone_android, const Color(0xFF16382C), _accentGreen,
+          () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AirtimePage()))),
+      _BillCategory('Data', Icons.wifi, const Color(0xFF16382C), _accentGreen,
+          () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BuyDataPage()))),
+      _BillCategory('Cable TV', Icons.tv, const Color(0xFF2A1230), Colors.purpleAccent, () {}),
+      _BillCategory('Internet', Icons.router_outlined, const Color(0xFF122A3A), Colors.lightBlueAccent, () {}),
+      _BillCategory('Water', Icons.water_drop_outlined, const Color(0xFF122A3A), Colors.blueAccent, () {}),
+      _BillCategory('Education', Icons.school_outlined, const Color(0xFF3A1212), Colors.redAccent, () {}),
+      _BillCategory('Insurance', Icons.shield_outlined, const Color(0xFF163A2E), _accentGreen, () {}),
+    ];
+
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
-      appBar: AppBar(
-        title: const Text("Bill Payment"),
-        centerTitle: true,
-        backgroundColor: Colors.blue,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              Card(
-                elevation: 5,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      const Text(
-                        "Wallet Balance",
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        "₦${_walletBalance.toStringAsFixed(2)}",
-                        style: const TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
-                      ),
-                    ],
-                  ),
+      backgroundColor: _bgDark,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(context),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildPromoBanner(),
+                    const SizedBox(height: 16),
+                    _buildVoucherRow(),
+                    const SizedBox(height: 16),
+                    _buildCategoriesGrid(bills),
+                    const SizedBox(height: 24),
+                  ],
                 ),
               ),
-
-              const SizedBox(height: 25),
-
-              DropdownButtonFormField<String>(
-                initialValue: selectedCategory,
-                decoration: const InputDecoration(
-                  labelText: "Select Bill Category",
-                  border: OutlineInputBorder(),
-                ),
-                items: providersByCategory.keys.map((category) {
-                  return DropdownMenuItem(
-                    value: category,
-                    child: Text(category),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    selectedCategory = value;
-                    selectedProvider = null;
-                  });
-                },
-              ),
-
-              const SizedBox(height: 20),
-
-              DropdownButtonFormField<String>(
-                initialValue: selectedProvider,
-                decoration: const InputDecoration(
-                  labelText: "Select Provider",
-                  border: OutlineInputBorder(),
-                ),
-                items: _availableProviders.map((provider) {
-                  return DropdownMenuItem(
-                    value: provider,
-                    child: Text(provider),
-                  );
-                }).toList(),
-                onChanged: selectedCategory == null
-                    ? null
-                    : (value) {
-                        setState(() {
-                          selectedProvider = value;
-                        });
-                      },
-              ),
-
-              const SizedBox(height: 20),
-
-              TextFormField(
-                controller: meterOrCardNumberController,
-                keyboardType: TextInputType.number,
-                validator: _validateNumber,
-                decoration: InputDecoration(
-                  labelText: selectedCategory == "Electricity"
-                      ? "Meter Number"
-                      : "Smartcard/Account Number",
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              TextFormField(
-                controller: amountController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                validator: _validateAmount,
-                decoration: const InputDecoration(
-                  labelText: "Amount",
-                  prefixText: "₦",
-                  border: OutlineInputBorder(),
-                ),
-              ),
-
-              const SizedBox(height: 30),
-
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _handlePayBill,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(strokeWidth: 2.5),
-                        )
-                      : const Text(
-                          "PAY BILL",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
+
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+              ),
+              const Text(
+                'Bill Payment',
+                style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          TextButton(
+            onPressed: () {},
+            child: const Text('History', style: TextStyle(color: _accentGreen)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPromoBanner() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F5E9),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          Text(
+            'Pay All Your Bills in One Place',
+            style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          SizedBox(height: 4),
+          Text(
+            'Fast, secure, and reliable — every time',
+            style: TextStyle(color: Colors.black54, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVoucherRow() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: _cardDark,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.local_activity_outlined, color: Colors.purpleAccent),
+          const SizedBox(width: 10),
+          const Text('Voucher', style: TextStyle(color: Colors.white, fontSize: 14)),
+          const Spacer(),
+          Row(
+            children: const [
+              Text('More', style: TextStyle(color: Colors.white54, fontSize: 13)),
+              Icon(Icons.chevron_right, color: Colors.white54, size: 18),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoriesGrid(List<_BillCategory> bills) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _cardDark,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'All Bills',
+            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 16),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: bills.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 16,
+              childAspectRatio: 0.8,
+            ),
+            itemBuilder: (context, index) => _categoryTile(bills[index]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _categoryTile(_BillCategory bill) {
+    return GestureDetector(
+      onTap: bill.onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: bill.iconBg,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(bill.icon, color: bill.iconColor, size: 24),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            bill.label,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.white, fontSize: 11),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BillCategory {
+  final String label;
+  final IconData icon;
+  final Color iconBg;
+  final Color iconColor;
+  final VoidCallback onTap;
+
+  _BillCategory(this.label, this.icon, this.iconBg, this.iconColor, this.onTap);
 }

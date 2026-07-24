@@ -8,298 +8,309 @@ class TvSubscriptionPage extends StatefulWidget {
 }
 
 class _TvSubscriptionPageState extends State<TvSubscriptionPage> {
-  final TextEditingController smartCardController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
-
-  String? selectedProvider;
-  String? selectedBouquet;
-  bool _isLoading = false;
-  bool _isVerifyingCard = false;
+  String _selectedProvider = 'DStv';
+  final TextEditingController _smartCardController =
+      TextEditingController(text: '1234567890');
+  String? _selectedPlan;
   String? _resolvedCustomerName;
+  bool _isResolving = false;
 
-  // TODO: Replace with the actual wallet balance from your state
-  // management / backend (e.g. a Provider, Bloc, or Riverpod source).
-  final double _walletBalance = 0.00;
+  static const Color _bgDark = Color(0xFF121212);
+  static const Color _cardDark = Color(0xFF1E1E1E);
+  static const Color _accentGreen = Color(0xFF1DBF8A);
 
-  final List<String> providers = [
-    "DStv",
-    "GOtv",
-    "Startimes",
+  final List<Map<String, String>> _providers = [
+    {'name': 'DStv', 'icon': 'D', 'color': '0xFF1565C0'},
+    {'name': 'GOtv', 'icon': 'G', 'color': '0xFF2E7D32'},
+    {'name': 'Startimes', 'icon': 'S', 'color': '0xFFD32F2F'},
   ];
 
-  // TODO: Replace with real bouquets/prices per provider from your bill
-  // payment provider's API — these change periodically (e.g. DStv price
-  // adjustments), so hardcoding them long-term will drift out of date.
-  final Map<String, List<String>> bouquetsByProvider = {
-    "DStv": [
-      "DStv Padi - ₦2,950",
-      "DStv Yanga - ₦3,950",
-      "DStv Confam - ₦6,200",
-      "DStv Compact - ₦15,700",
-      "DStv Compact Plus - ₦25,000",
-      "DStv Premium - ₦37,000",
-    ],
-    "GOtv": [
-      "GOtv Smallie - ₦1,575",
-      "GOtv Jinja - ₦3,300",
-      "GOtv Jolli - ₦4,850",
-      "GOtv Max - ₦6,150",
-      "GOtv Supa - ₦8,500",
-    ],
-    "Startimes": [
-      "Nova - ₦1,900",
-      "Basic - ₦4,200",
-      "Smart - ₦5,300",
-      "Classic - ₦6,000",
-      "Super - ₦9,800",
-    ],
-  };
+  final List<Map<String, String>> _plans = [
+    {'name': 'Padi', 'price': '₦1,850', 'duration': '1 Month'},
+    {'name': 'Yanga', 'price': '₦2,565', 'duration': '1 Month'},
+    {'name': 'Confam', 'price': '₦4,615', 'duration': '1 Month'},
+    {'name': 'Premium', 'price': '₦29,500', 'duration': '1 Month'},
+    {'name': 'Compact', 'price': '₦19,000', 'duration': '1 Month'},
+    {'name': 'Compact Plus', 'price': '₦30,000', 'duration': '1 Month'},
+  ];
 
-  List<String> get _availableBouquets => bouquetsByProvider[selectedProvider] ?? [];
+  void _resolveCustomer() {
+    setState(() => _isResolving = true);
+    Future.delayed(const Duration(milliseconds: 900), () {
+      if (mounted) {
+        setState(() {
+          _isResolving = false;
+          _resolvedCustomerName = 'Ibrahim Suleiman';
+        });
+      }
+    });
+  }
 
   @override
   void dispose() {
-    smartCardController.dispose();
+    _smartCardController.dispose();
     super.dispose();
-  }
-
-  Future<void> _verifySmartCard() async {
-    final cardNumber = smartCardController.text.trim();
-
-    if (selectedProvider == null || cardNumber.length < 8) {
-      setState(() {
-        _resolvedCustomerName = null;
-      });
-      return;
-    }
-
-    setState(() {
-      _isVerifyingCard = true;
-      _resolvedCustomerName = null;
-    });
-
-    // TODO: Replace with a real smart card/IUC verification API call
-    // (typically part of the same bill payment provider you use for
-    // electricity, e.g. via a "verify" endpoint before "vend"). This
-    // confirms the card number is valid and shows the customer's name
-    // before charging, so a mistyped card number doesn't waste the
-    // payment.
-    await Future.delayed(const Duration(milliseconds: 800));
-
-    if (!mounted) return;
-
-    setState(() {
-      _isVerifyingCard = false;
-      _resolvedCustomerName = "Card verification not yet connected";
-    });
-  }
-
-  String? _validateSmartCard(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return "Please enter your Smart Card / IUC number";
-    }
-
-    if (value.trim().length < 8) {
-      return "Enter a valid Smart Card / IUC number";
-    }
-
-    return null;
-  }
-
-  Future<void> _handlePaySubscription() async {
-    if (selectedProvider == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select a TV provider")),
-      );
-      return;
-    }
-
-    if (selectedBouquet == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select a bouquet")),
-      );
-      return;
-    }
-
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    // TODO: Replace with actual TV subscription payment API call, then
-    // handle success/failure states (e.g. deduct wallet balance, show a
-    // receipt, or surface an error from the provider).
-    await Future.delayed(const Duration(seconds: 1));
-
-    if (!mounted) return;
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("TV subscription coming soon...")),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
-      appBar: AppBar(
-        title: const Text("TV Subscription"),
-        centerTitle: true,
-        backgroundColor: Colors.blue,
+      backgroundColor: _bgDark,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildPromoBanner(),
+                    const SizedBox(height: 16),
+                    _buildProviderCard(),
+                    const SizedBox(height: 16),
+                    _buildPlansCard(),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
             children: [
-              Card(
-                elevation: 5,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      const Text(
-                        "Wallet Balance",
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        "₦${_walletBalance.toStringAsFixed(2)}",
-                        style: const TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
               ),
-
-              const SizedBox(height: 20),
-
-              DropdownButtonFormField<String>(
-                initialValue: selectedProvider,
-                decoration: const InputDecoration(
-                  labelText: "TV Provider",
-                  border: OutlineInputBorder(),
-                ),
-                items: providers.map((provider) {
-                  return DropdownMenuItem(
-                    value: provider,
-                    child: Text(provider),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    selectedProvider = value;
-                    selectedBouquet = null;
-                  });
-                  _verifySmartCard();
-                },
-              ),
-
-              const SizedBox(height: 20),
-
-              TextFormField(
-                controller: smartCardController,
-                keyboardType: TextInputType.number,
-                validator: _validateSmartCard,
-                onChanged: (_) => _verifySmartCard(),
-                decoration: const InputDecoration(
-                  labelText: "Smart Card / IUC Number",
-                  border: OutlineInputBorder(),
-                ),
-              ),
-
-              if (_resolvedCustomerName != null || _isVerifyingCard) ...[
-                const SizedBox(height: 10),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    children: [
-                      if (_isVerifyingCard)
-                        const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      if (_isVerifyingCard) const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          _resolvedCustomerName ?? "",
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: 20),
-
-              DropdownButtonFormField<String>(
-                initialValue: selectedBouquet,
-                decoration: const InputDecoration(
-                  labelText: "Select Bouquet",
-                  border: OutlineInputBorder(),
-                ),
-                items: _availableBouquets.map((bouquet) {
-                  return DropdownMenuItem(
-                    value: bouquet,
-                    child: Text(bouquet),
-                  );
-                }).toList(),
-                onChanged: selectedProvider == null
-                    ? null
-                    : (value) {
-                        setState(() {
-                          selectedBouquet = value;
-                        });
-                      },
-              ),
-
-              const SizedBox(height: 30),
-
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _handlePaySubscription,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(strokeWidth: 2.5),
-                        )
-                      : const Text(
-                          "PAY TV SUBSCRIPTION",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                ),
+              const Text(
+                'TV Subscription',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
               ),
             ],
           ),
+          TextButton(
+            onPressed: () {},
+            child: const Text('History', style: TextStyle(color: _accentGreen)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPromoBanner() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F5E9),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          Text(
+            'Never Miss Your Favorite Shows',
+            style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          SizedBox(height: 4),
+          Text(
+            'Renew your subscription in seconds',
+            style: TextStyle(color: Colors.black54, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProviderCard() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _cardDark,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: _providers.map((p) => _providerTile(p)).toList(),
+          ),
+          const SizedBox(height: 20),
+          const Text('Smart card / IUC number', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF262626),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: TextField(
+              controller: _smartCardController,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+              decoration: const InputDecoration(border: InputBorder.none, isDense: true, contentPadding: EdgeInsets.symmetric(vertical: 12)),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: _resolveCustomer,
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: _accentGreen),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              ),
+              child: const Text('Verify', style: TextStyle(color: _accentGreen)),
+            ),
+          ),
+          if (_isResolving) ...[
+            const SizedBox(height: 10),
+            const Row(
+              children: [
+                SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: _accentGreen)),
+                SizedBox(width: 10),
+                Text('Verifying...', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              ],
+            ),
+          ],
+          if (_resolvedCustomerName != null && !_isResolving) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: _accentGreen.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: _accentGreen),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: _accentGreen, size: 18),
+                  const SizedBox(width: 10),
+                  Text(_resolvedCustomerName!, style: const TextStyle(color: _accentGreen, fontSize: 14, fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _providerTile(Map<String, String> provider) {
+    final bool selected = provider['name'] == _selectedProvider;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() {
+          _selectedProvider = provider['name']!;
+          _resolvedCustomerName = null;
+        }),
+        child: Column(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Color(int.parse(provider['color']!)),
+                borderRadius: BorderRadius.circular(12),
+                border: selected ? Border.all(color: _accentGreen, width: 2) : null,
+              ),
+              child: Center(
+                child: Text(provider['icon']!, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              provider['name']!,
+              style: TextStyle(
+                color: selected ? _accentGreen : Colors.white70,
+                fontSize: 11,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlansCard() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _cardDark,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Select a plan', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 14),
+          ..._plans.map((plan) => _planTile(plan)),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _selectedPlan == null ? null : () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _accentGreen,
+                foregroundColor: Colors.black,
+                disabledBackgroundColor: const Color(0xFF2A2A2A),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              ),
+              child: const Text('Continue', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _planTile(Map<String, String> plan) {
+    final bool selected = plan['name'] == _selectedPlan;
+    return InkWell(
+      onTap: () => setState(() => _selectedPlan = plan['name']),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected ? _accentGreen.withOpacity(0.12) : const Color(0xFF262626),
+          borderRadius: BorderRadius.circular(12),
+          border: selected ? Border.all(color: _accentGreen) : null,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(plan['name']!, style: TextStyle(color: selected ? _accentGreen : Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 2),
+                  Text(plan['duration']!, style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                ],
+              ),
+            ),
+            Text(plan['price']!, style: TextStyle(color: selected ? _accentGreen : Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+            if (selected) ...[
+              const SizedBox(width: 10),
+              const Icon(Icons.check_circle, color: _accentGreen, size: 18),
+            ],
+          ],
         ),
       ),
     );

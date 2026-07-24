@@ -1,264 +1,191 @@
 import 'package:flutter/material.dart';
+import 'transfer_mamash_page.dart';
+import 'transfer_bank_page.dart';
 
-class SendMoneyPage extends StatefulWidget {
-  final String? prefilledAccountNumber;
+class SendMoneyPage extends StatelessWidget {
+  const SendMoneyPage({super.key});
 
-  const SendMoneyPage({super.key, this.prefilledAccountNumber});
-
-  @override
-  State<SendMoneyPage> createState() => _SendMoneyPageState();
-}
-
-class _SendMoneyPageState extends State<SendMoneyPage> {
-  late final TextEditingController accountController;
-  final TextEditingController amountController = TextEditingController();
-  final TextEditingController noteController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
-
-  bool _isLoading = false;
-  bool _isVerifyingAccount = false;
-  String? _resolvedAccountName;
-
-  // TODO: Replace with the actual wallet balance from your state
-  // management / backend (e.g. a Provider, Bloc, or Riverpod source).
-  final double _walletBalance = 0.00;
-
-  @override
-  void initState() {
-    super.initState();
-    accountController = TextEditingController(text: widget.prefilledAccountNumber ?? "");
-
-    if (widget.prefilledAccountNumber != null && widget.prefilledAccountNumber!.isNotEmpty) {
-      // Auto-verify if we arrived here with a scanned account number.
-      WidgetsBinding.instance.addPostFrameCallback((_) => _verifyAccount());
-    }
-  }
-
-  @override
-  void dispose() {
-    accountController.dispose();
-    amountController.dispose();
-    noteController.dispose();
-    super.dispose();
-  }
-
-  String? _validateAccount(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return "Please enter a recipient account number";
-    }
-
-    if (value.trim().length < 8) {
-      return "Enter a valid account number";
-    }
-
-    return null;
-  }
-
-  String? _validateAmount(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return "Please enter an amount";
-    }
-
-    final amount = double.tryParse(value.trim());
-
-    if (amount == null) {
-      return "Enter a valid number";
-    }
-
-    if (amount <= 0) {
-      return "Amount must be greater than zero";
-    }
-
-    if (amount > _walletBalance) {
-      return "Insufficient wallet balance";
-    }
-
-    return null;
-  }
-
-  Future<void> _verifyAccount() async {
-    final accountNumber = accountController.text.trim();
-
-    if (accountNumber.length < 8) {
-      setState(() {
-        _resolvedAccountName = null;
-      });
-      return;
-    }
-
-    setState(() {
-      _isVerifyingAccount = true;
-      _resolvedAccountName = null;
-    });
-
-    // TODO: Replace with a real account lookup API call that resolves an
-    // account number to the account holder's name, so the sender can
-    // confirm they're sending to the right person before submitting.
-    await Future.delayed(const Duration(milliseconds: 800));
-
-    if (!mounted) return;
-
-    setState(() {
-      _isVerifyingAccount = false;
-      _resolvedAccountName = "Account holder name unavailable (not yet connected)";
-    });
-  }
-
-  Future<void> _handleSendMoney() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    // TODO: Replace with actual send-money API call, then handle
-    // success/failure states (e.g. deduct wallet balance, show a receipt,
-    // or surface an error from the backend).
-    await Future.delayed(const Duration(seconds: 1));
-
-    if (!mounted) return;
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Send money feature coming soon...")),
-    );
-  }
+  static const Color _bgDark = Color(0xFF121212);
+  static const Color _cardDark = Color(0xFF1E1E1E);
+  static const Color _accentGreen = Color(0xFF1DBF8A);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
-      appBar: AppBar(
-        title: const Text("Send Money"),
-        centerTitle: true,
-        backgroundColor: Colors.blue,
+      backgroundColor: _bgDark,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(context),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildRecentRecipients(),
+                    const SizedBox(height: 16),
+                    _buildOptionsCard(context),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              Card(
-                elevation: 5,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      const Text(
-                        "Wallet Balance",
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        "₦${_walletBalance.toStringAsFixed(2)}",
-                        style: const TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+    );
+  }
 
-              const SizedBox(height: 25),
-
-              TextFormField(
-                controller: accountController,
-                keyboardType: TextInputType.text,
-                validator: _validateAccount,
-                onChanged: (_) => _verifyAccount(),
-                decoration: InputDecoration(
-                  labelText: "Recipient Account Number",
-                  border: const OutlineInputBorder(),
-                  suffixIcon: _isVerifyingAccount
-                      ? const Padding(
-                          padding: EdgeInsets.all(14),
-                          child: SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        )
-                      : null,
-                ),
-              ),
-
-              if (_resolvedAccountName != null) ...[
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    _resolvedAccountName!,
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: 20),
-
-              TextFormField(
-                controller: amountController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                validator: _validateAmount,
-                decoration: const InputDecoration(
-                  labelText: "Amount",
-                  prefixText: "₦",
-                  border: OutlineInputBorder(),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              TextFormField(
-                controller: noteController,
-                keyboardType: TextInputType.text,
-                decoration: const InputDecoration(
-                  labelText: "Note (optional)",
-                  border: OutlineInputBorder(),
-                ),
-              ),
-
-              const SizedBox(height: 30),
-
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-                  onPressed: _isLoading ? null : _handleSendMoney,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text(
-                          "SEND MONEY",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                ),
-              ),
-            ],
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
           ),
+          const Text(
+            'Send Money',
+            style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentRecipients() {
+    final recents = [
+      {'initials': 'AY', 'name': 'Amina'},
+      {'initials': 'CO', 'name': 'Chidi'},
+      {'initials': 'FB', 'name': 'Fatima'},
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: Text('Recent', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
+          ),
+          SizedBox(
+            height: 84,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: recents.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 14),
+              itemBuilder: (context, index) {
+                final r = recents[index];
+                return Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 26,
+                      backgroundColor: _accentGreen.withOpacity(0.15),
+                      child: Text(r['initials']!, style: const TextStyle(color: _accentGreen, fontWeight: FontWeight.w600)),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(r['name']!, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOptionsCard(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _cardDark,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Send via', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 14),
+          _optionTile(
+            context,
+            icon: Icons.account_balance_wallet_outlined,
+            iconBg: const Color(0xFF163A2E),
+            iconColor: _accentGreen,
+            title: 'To Mamash user',
+            subtitle: 'Send instantly to another Mamash wallet',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransferMamashPage())),
+          ),
+          const SizedBox(height: 10),
+          _optionTile(
+            context,
+            icon: Icons.account_balance_outlined,
+            iconBg: const Color(0xFF16232E),
+            iconColor: Colors.lightBlueAccent,
+            title: 'To bank account',
+            subtitle: 'Transfer to any Nigerian bank',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransferBankPage())),
+          ),
+          const SizedBox(height: 10),
+          _optionTile(
+            context,
+            icon: Icons.qr_code_scanner,
+            iconBg: const Color(0xFF2E1636),
+            iconColor: Colors.purpleAccent,
+            title: 'Scan QR code',
+            subtitle: 'Scan to send to a merchant or contact',
+            onTap: () {},
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _optionTile(
+    BuildContext context, {
+    required IconData icon,
+    required Color iconBg,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF262626),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.white38),
+          ],
         ),
       ),
     );

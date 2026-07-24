@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-import 'send_money_page.dart';
-
 class ScanPage extends StatefulWidget {
   const ScanPage({super.key});
 
@@ -12,9 +10,68 @@ class ScanPage extends StatefulWidget {
 
 class _ScanPageState extends State<ScanPage> {
   final MobileScannerController _controller = MobileScannerController();
-
-  bool _hasHandledScan = false;
   bool _torchOn = false;
+  String? _lastScanned;
+
+  static const Color _bgDark = Color(0xFF121212);
+  static const Color _accentGreen = Color(0xFF1DBF8A);
+
+  void _onDetect(BarcodeCapture capture) {
+    final barcode = capture.barcodes.firstOrNull;
+    final value = barcode?.rawValue;
+    if (value != null && value != _lastScanned) {
+      setState(() => _lastScanned = value);
+      _showScanResult(value);
+    }
+  }
+
+  void _showScanResult(String value) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1E1E1E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Scan result', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF262626),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(value, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    setState(() => _lastScanned = null);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _accentGreen,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  ),
+                  child: const Text('Continue', style: TextStyle(fontWeight: FontWeight.w600)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   void dispose() {
@@ -22,150 +79,93 @@ class _ScanPageState extends State<ScanPage> {
     super.dispose();
   }
 
-  void _handleDetection(BarcodeCapture capture) {
-    if (_hasHandledScan) return;
-
-    if (capture.barcodes.isEmpty) return;
-
-    final barcode = capture.barcodes.first;
-    final rawValue = barcode.rawValue;
-
-    if (rawValue == null || rawValue.isEmpty) return;
-
-    _hasHandledScan = true;
-
-    // TODO: Parse rawValue according to whatever format your own QR
-    // codes use (e.g. the account number from ReceiveMoneyPage, or a
-    // structured payload like "mamash://pay?account=1234567890&amount=500").
-    // Right now this just passes the raw scanned text along.
-    _showScanResult(rawValue);
-  }
-
-  void _showScanResult(String scannedValue) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "QR Code Scanned",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                scannedValue,
-                style: const TextStyle(color: Colors.grey),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                  onPressed: () {
-                    Navigator.pop(context); // close sheet
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const SendMoneyPage(),
-                      ),
-                    );
-                  },
-                  child: const Text(
-                    "Continue to Send Money",
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: OutlinedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    setState(() {
-                      _hasHandledScan = false;
-                    });
-                  },
-                  child: const Text("Scan Again"),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    ).whenComplete(() {
-      // If the user dismisses the sheet by swiping down instead of
-      // tapping a button, still allow scanning again.
-      if (mounted) {
-        setState(() {
-          _hasHandledScan = false;
-        });
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: const Text("Scan"),
-        backgroundColor: Colors.green,
-        actions: [
-          IconButton(
-            icon: Icon(_torchOn ? Icons.flash_on : Icons.flash_off),
-            onPressed: () {
-              _controller.toggleTorch();
-              setState(() {
-                _torchOn = !_torchOn;
-              });
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.cameraswitch),
-            onPressed: () => _controller.switchCamera(),
-          ),
-        ],
-      ),
+      backgroundColor: _bgDark,
       body: Stack(
         children: [
           MobileScanner(
             controller: _controller,
-            onDetect: _handleDetection,
+            onDetect: _onDetect,
           ),
+          _buildOverlay(),
+          _buildHeader(context),
+          _buildBottomBar(),
+        ],
+      ),
+    );
+  }
 
-          // Simple scan-area overlay so users know where to point the camera.
-          Center(
-            child: Container(
-              width: 250,
-              height: 250,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.white, width: 3),
-                borderRadius: BorderRadius.circular(16),
+  Widget _buildHeader(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            IconButton(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+            ),
+            const Text(
+              'Scan QR Code',
+              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            IconButton(
+              onPressed: () {
+                setState(() => _torchOn = !_torchOn);
+                _controller.toggleTorch();
+              },
+              icon: Icon(
+                _torchOn ? Icons.flash_on : Icons.flash_off,
+                color: Colors.white,
               ),
             ),
-          ),
+          ],
+        ),
+      ),
+    );
+  }
 
-          Positioned(
-            bottom: 40,
-            left: 0,
-            right: 0,
-            child: const Text(
-              "Align the QR code within the frame",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white, fontSize: 14),
-            ),
+  Widget _buildOverlay() {
+    return Center(
+      child: Container(
+        width: 250,
+        height: 250,
+        decoration: BoxDecoration(
+          border: Border.all(color: _accentGreen, width: 3),
+          borderRadius: BorderRadius.circular(20),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomBar() {
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Align the QR code within the frame to scan',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+              const SizedBox(height: 14),
+              TextButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.keyboard, color: _accentGreen, size: 18),
+                label: const Text('Enter code manually', style: TextStyle(color: _accentGreen)),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

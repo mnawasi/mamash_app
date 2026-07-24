@@ -1,21 +1,4 @@
-import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'dashboard_page.dart';
-
-// TODO: This screen currently only captures a photo from the device
-// camera — it does NOT perform real face matching or liveness detection.
-// For a financial app, "Face Verification" should be backed by an actual
-// biometric/KYC provider before this gates access to the dashboard.
-// Common options for Nigerian fintech apps: Smile Identity, Youverify,
-// or Dojah. Each typically works like this:
-//   1. Capture a photo (this screen already does that).
-//   2. Send the photo to the provider's API (usually alongside a BVN/NIN
-//      photo already on file) from your BACKEND, not directly from the
-//      app, since API keys must never live in client code.
-//   3. Your backend returns a match/liveness result.
-//   4. Only navigate to DashboardPage if that result is a pass.
-// Until that's wired up, treat this screen as a capture step, not a
-// security gate.
 
 class FaceVerificationPage extends StatefulWidget {
   const FaceVerificationPage({super.key});
@@ -24,233 +7,191 @@ class FaceVerificationPage extends StatefulWidget {
   State<FaceVerificationPage> createState() => _FaceVerificationPageState();
 }
 
-enum _VerificationStatus { idle, capturing, verifying, failed }
-
 class _FaceVerificationPageState extends State<FaceVerificationPage> {
-  CameraController? _cameraController;
-  Future<void>? _initializeControllerFuture;
+  bool _isCapturing = false;
 
-  _VerificationStatus _status = _VerificationStatus.idle;
-  String? _errorMessage;
+  static const Color _bgDark = Color(0xFF121212);
+  static const Color _cardDark = Color(0xFF1E1E1E);
+  static const Color _accentGreen = Color(0xFF1DBF8A);
 
-  @override
-  void initState() {
-    super.initState();
-    _setupCamera();
-  }
+  final List<Map<String, dynamic>> _tips = [
+    {'icon': Icons.wb_sunny_outlined, 'text': 'Find a well-lit area'},
+    {'icon': Icons.visibility_outlined, 'text': 'Remove glasses or face coverings'},
+    {'icon': Icons.center_focus_strong, 'text': 'Keep your face inside the frame'},
+    {'icon': Icons.sentiment_satisfied_alt_outlined, 'text': 'Hold still and look straight ahead'},
+  ];
 
-  Future<void> _setupCamera() async {
-    try {
-      final cameras = await availableCameras();
-
-      final frontCamera = cameras.firstWhere(
-        (camera) => camera.lensDirection == CameraLensDirection.front,
-        orElse: () => cameras.first,
-      );
-
-      _cameraController = CameraController(
-        frontCamera,
-        ResolutionPreset.medium,
-        enableAudio: false,
-      );
-
-      _initializeControllerFuture = _cameraController!.initialize();
-
-      if (mounted) {
-        setState(() {});
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _status = _VerificationStatus.failed;
-        _errorMessage =
-            "Couldn't access the camera. Check camera permissions in your device settings and try again.";
-      });
-    }
-  }
-
-  Future<void> _verifyFace() async {
-    if (_cameraController == null || _initializeControllerFuture == null) {
-      return;
-    }
-
-    setState(() {
-      _status = _VerificationStatus.capturing;
-      _errorMessage = null;
+  void _startCapture() {
+    setState(() => _isCapturing = true);
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _isCapturing = false);
     });
-
-    try {
-      await _initializeControllerFuture;
-      final image = await _cameraController!.takePicture();
-
-      setState(() {
-        _status = _VerificationStatus.verifying;
-      });
-
-      // TODO: Replace this with a real call to your backend, sending
-      // `image.path` for biometric verification against the provider
-      // you choose (see note at top of file). The delay below is a
-      // placeholder only.
-      await Future.delayed(const Duration(seconds: 2));
-
-      final bool verified = true; // TODO: real result from backend
-
-      if (!mounted) return;
-
-      if (!verified) {
-        setState(() {
-          _status = _VerificationStatus.failed;
-          _errorMessage =
-              "We couldn't verify your face. Make sure you're in good lighting and looking directly at the camera, then try again.";
-        });
-        return;
-      }
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const DashboardPage()),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _status = _VerificationStatus.failed;
-        _errorMessage = "Something went wrong while capturing your photo. Please try again.";
-      });
-    }
   }
-
-  @override
-  void dispose() {
-    _cameraController?.dispose();
-    super.dispose();
-  }
-
-  bool get _isBusy =>
-      _status == _VerificationStatus.capturing ||
-      _status == _VerificationStatus.verifying;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
-      appBar: AppBar(
-        centerTitle: true,
-        title: const Text("Face Verification"),
+      backgroundColor: _bgDark,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildIntroBanner(),
+                    const SizedBox(height: 20),
+                    _buildCameraPreview(),
+                    const SizedBox(height: 20),
+                    _buildTipsCard(),
+                    const SizedBox(height: 24),
+                    _buildActionButton(),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(25),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+    );
+  }
 
-              ClipOval(
-                child: SizedBox(
-                  width: 140,
-                  height: 140,
-                  child: _cameraController != null &&
-                          _cameraController!.value.isInitialized
-                      ? CameraPreview(_cameraController!)
-                      : Container(
-                          color: Colors.blue,
-                          child: const Icon(
-                            Icons.face,
-                            size: 80,
-                            color: Colors.white,
-                          ),
-                        ),
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+          ),
+          const Text(
+            'Face Verification',
+            style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIntroBanner() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F5E9),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          Text(
+            'Verify Your Identity',
+            style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          SizedBox(height: 4),
+          Text(
+            'We just need a quick selfie to confirm it\'s really you',
+            style: TextStyle(color: Colors.black54, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCameraPreview() {
+    return Center(
+      child: Container(
+        width: 320,
+        height: 320,
+        decoration: BoxDecoration(
+          color: _cardDark,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: _isCapturing ? _accentGreen : Colors.white24,
+            width: 3,
+          ),
+        ),
+        child: Center(
+          child: _isCapturing
+              ? const CircularProgressIndicator(color: _accentGreen)
+              : Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.face_retouching_natural, color: Colors.white38, size: 64),
+                    SizedBox(height: 10),
+                    Text(
+                      'Position your face here',
+                      style: TextStyle(color: Colors.white38, fontSize: 12),
+                    ),
+                  ],
                 ),
-              ),
+        ),
+      ),
+    );
+  }
 
-              const SizedBox(height: 30),
-
-              const Text(
-                "Verify Your Face",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-              const SizedBox(height: 15),
-
-              const Text(
-                "For your security, Mamash requires facial verification before accessing your account.",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey,
-                ),
-              ),
-
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.red.shade200),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          _errorMessage!,
-                          style: TextStyle(color: Colors.red.shade700, fontSize: 13),
-                        ),
+  Widget _buildTipsCard() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _cardDark,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Before you start',
+            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 12),
+          ..._tips.map((tip) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF163A2E),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                    ],
-                  ),
+                      child: Icon(tip['icon'], color: _accentGreen, size: 16),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        tip['text'],
+                        style: const TextStyle(color: Colors.white70, fontSize: 13),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              )),
+        ],
+      ),
+    );
+  }
 
-              const SizedBox(height: 40),
-
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: ElevatedButton(
-                  onPressed: _isBusy ? null : _verifyFace,
-                  child: _isBusy
-                      ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(
-                          _status == _VerificationStatus.failed
-                              ? "TRY AGAIN"
-                              : "VERIFY FACE",
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              TextButton(
-                onPressed: _isBusy
-                    ? null
-                    : () {
-                        // TODO: Route this to a real support/contact page,
-                        // or an alternate verification method (e.g. manual
-                        // document review) if you offer one.
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Support contact coming soon...")),
-                        );
-                      },
-                child: const Text("Having trouble? Contact support"),
-              ),
-            ],
+  Widget _buildActionButton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: _isCapturing ? null : _startCapture,
+          icon: const Icon(Icons.camera_alt_outlined),
+          label: Text(_isCapturing ? 'Capturing...' : 'Start Verification'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _accentGreen,
+            foregroundColor: Colors.black,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
           ),
         ),
       ),

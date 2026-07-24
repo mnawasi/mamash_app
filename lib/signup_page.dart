@@ -25,8 +25,10 @@ class _SecureRegistrationPageState extends State<SignupPage> {
   bool acceptTerms = false;
   bool isLoading = false;
 
-  final Color primaryBankColor = const Color(0xFF0D47A1);
-  final Color backgroundGrey = const Color(0xFFF4F6F9);
+  static const Color _bgDark = Color(0xFF121212);
+  static const Color _cardDark = Color(0xFF1E1E1E);
+  static const Color _fieldDark = Color(0xFF262626);
+  static const Color _accentGreen = Color(0xFF1DBF8A);
 
   String? _validateFullName(String? value) {
     if (value == null || value.trim().isEmpty) {
@@ -200,12 +202,12 @@ class _SecureRegistrationPageState extends State<SignupPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: backgroundGrey,
+      backgroundColor: _bgDark,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        title: Icon(Icons.account_balance, color: primaryBankColor, size: 36),
+        title: const Icon(Icons.account_balance, color: _accentGreen, size: 36),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -215,34 +217,27 @@ class _SecureRegistrationPageState extends State<SignupPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   "Create Account",
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w800,
-                    color: primaryBankColor,
+                    color: Colors.white,
                     letterSpacing: -0.5,
                   ),
                 ),
                 const SizedBox(height: 8),
                 const Text(
                   "Secure banking starts here. Please fill in your details.",
-                  style: TextStyle(fontSize: 15, color: Colors.black54),
+                  style: TextStyle(fontSize: 15, color: Colors.white54),
                 ),
                 const SizedBox(height: 30),
 
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: _cardDark,
                     borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
                   ),
                   child: Column(
                     children: [
@@ -308,7 +303,9 @@ class _SecureRegistrationPageState extends State<SignupPage> {
                       width: 24,
                       child: Checkbox(
                         value: acceptTerms,
-                        activeColor: primaryBankColor,
+                        activeColor: _accentGreen,
+                        checkColor: Colors.black,
+                        side: const BorderSide(color: Colors.white38),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(4),
                         ),
@@ -323,7 +320,7 @@ class _SecureRegistrationPageState extends State<SignupPage> {
                     const Expanded(
                       child: Text(
                         "I agree to the Terms & Conditions",
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.white70),
                       ),
                     ),
                   ],
@@ -336,10 +333,9 @@ class _SecureRegistrationPageState extends State<SignupPage> {
                   child: ElevatedButton(
                     onPressed: isLoading ? null : createAccount,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryBankColor,
-                      foregroundColor: Colors.white,
-                      elevation: 4,
-                      shadowColor: primaryBankColor.withValues(alpha: 0.4),
+                      backgroundColor: _accentGreen,
+                      foregroundColor: Colors.black,
+                      elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -350,7 +346,7 @@ class _SecureRegistrationPageState extends State<SignupPage> {
                             height: 28,
                             child: CircularProgressIndicator(
                               strokeWidth: 3,
-                              color: Colors.white,
+                              color: Colors.black,
                             ),
                           )
                         : const Text(
@@ -368,20 +364,20 @@ class _SecureRegistrationPageState extends State<SignupPage> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.08),
+                    color: _accentGreen.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+                    border: Border.all(color: _accentGreen.withValues(alpha: 0.3)),
                   ),
                   child: const Row(
                     children: [
-                      Icon(Icons.security, color: Colors.green, size: 24),
+                      Icon(Icons.security, color: _accentGreen, size: 24),
                       SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           "Your information is protected using bank-level encryption.",
                           style: TextStyle(
                             fontSize: 13,
-                            color: Colors.green,
+                            color: _accentGreen,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -396,7 +392,7 @@ class _SecureRegistrationPageState extends State<SignupPage> {
                   children: [
                     const Text(
                       "Already have an account?",
-                      style: TextStyle(color: Colors.black87),
+                      style: TextStyle(color: Colors.white70),
                     ),
                     TextButton(
                       onPressed: () {
@@ -405,11 +401,11 @@ class _SecureRegistrationPageState extends State<SignupPage> {
                           MaterialPageRoute(builder: (_) => const LoginPage()),
                         );
                       },
-                      child: Text(
+                      child: const Text(
                         "Login",
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: primaryBankColor,
+                          color: _accentGreen,
                           fontSize: 16,
                         ),
                       ),
@@ -421,7 +417,7 @@ class _SecureRegistrationPageState extends State<SignupPage> {
                 const Center(
                   child: Text(
                     "© 2026 Mamash",
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                    style: TextStyle(color: Colors.white38, fontSize: 12),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -448,23 +444,24 @@ class _SecureRegistrationPageState extends State<SignupPage> {
       keyboardType: keyboardType,
       obscureText: isPassword ? hidePassword : false,
       validator: validator,
+      style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: Colors.grey[600]),
-        prefixIcon: Icon(icon, color: primaryBankColor.withValues(alpha: 0.7)),
+        labelStyle: const TextStyle(color: Colors.white54),
+        prefixIcon: Icon(icon, color: _accentGreen.withValues(alpha: 0.8)),
         filled: true,
-        fillColor: Colors.grey[50],
+        fillColor: _fieldDark,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: primaryBankColor, width: 2),
+          borderSide: const BorderSide(color: _accentGreen, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -474,7 +471,7 @@ class _SecureRegistrationPageState extends State<SignupPage> {
             ? IconButton(
                 icon: Icon(
                   hidePassword ? Icons.visibility : Icons.visibility_off,
-                  color: Colors.grey[600],
+                  color: Colors.white54,
                 ),
                 onPressed: onTogglePassword,
               )

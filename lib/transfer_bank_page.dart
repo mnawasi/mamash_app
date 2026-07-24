@@ -8,282 +8,288 @@ class TransferBankPage extends StatefulWidget {
 }
 
 class _TransferBankPageState extends State<TransferBankPage> {
-  final TextEditingController accountNumberController = TextEditingController();
-  final TextEditingController amountController = TextEditingController();
-  final TextEditingController narrationController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
-
-  String? selectedBank;
-  bool _isLoading = false;
-  bool _isResolvingAccount = false;
+  String? _selectedBank;
+  final TextEditingController _accountController = TextEditingController();
+  final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _noteController = TextEditingController();
   String? _resolvedAccountName;
+  bool _isResolving = false;
 
-  // TODO: Replace with the actual wallet balance from your state
-  // management / backend (e.g. a Provider, Bloc, or Riverpod source).
-  final double _walletBalance = 0.00;
+  static const Color _bgDark = Color(0xFF121212);
+  static const Color _cardDark = Color(0xFF1E1E1E);
+  static const Color _accentGreen = Color(0xFF1DBF8A);
 
-  final List<String> banks = [
-    "Access Bank",
-    "First Bank",
-    "GTBank",
-    "UBA",
-    "Zenith Bank",
-    "Opay",
-    "PalmPay",
-    "Moniepoint",
-    "Kuda",
-    "Fidelity Bank",
+  final List<Map<String, String>> _banks = [
+    {'name': 'Access Bank', 'code': '044'},
+    {'name': 'GTBank', 'code': '058'},
+    {'name': 'Zenith Bank', 'code': '057'},
+    {'name': 'First Bank', 'code': '011'},
+    {'name': 'UBA', 'code': '033'},
+    {'name': 'Kuda Bank', 'code': '090267'},
+    {'name': 'Opay', 'code': '999992'},
+    {'name': 'Moniepoint', 'code': '999993'},
   ];
+
+  void _tryResolveAccount() {
+    if (_selectedBank != null && _accountController.text.length == 10) {
+      setState(() => _isResolving = true);
+      Future.delayed(const Duration(milliseconds: 900), () {
+        if (mounted) {
+          setState(() {
+            _isResolving = false;
+            _resolvedAccountName = 'Chinedu Adamu Okoro';
+          });
+        }
+      });
+    } else {
+      setState(() => _resolvedAccountName = null);
+    }
+  }
 
   @override
   void dispose() {
-    accountNumberController.dispose();
-    amountController.dispose();
-    narrationController.dispose();
+    _accountController.dispose();
+    _amountController.dispose();
+    _noteController.dispose();
     super.dispose();
-  }
-
-  Future<void> _resolveAccountName() async {
-    final accountNumber = accountNumberController.text.trim();
-
-    if (selectedBank == null || accountNumber.length != 10) {
-      setState(() {
-        _resolvedAccountName = null;
-      });
-      return;
-    }
-
-    setState(() {
-      _isResolvingAccount = true;
-      _resolvedAccountName = null;
-    });
-
-    // TODO: Replace with a real bank account name resolution API call
-    // (e.g. Paystack's "resolve account number" endpoint, or Flutterwave's
-    // equivalent). This is what actually confirms the account number
-    // belongs to a real person before the user sends money — critical for
-    // preventing costly mistakes from typos in the account number.
-    await Future.delayed(const Duration(milliseconds: 800));
-
-    if (!mounted) return;
-
-    setState(() {
-      _isResolvingAccount = false;
-      _resolvedAccountName = "Account name resolution not yet connected";
-    });
-  }
-
-  String? _validateBank() {
-    if (selectedBank == null) return "Please select a bank";
-    return null;
-  }
-
-  String? _validateAccountNumber(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return "Please enter an account number";
-    }
-
-    if (!RegExp(r'^[0-9]{10}$').hasMatch(value.trim())) {
-      return "Account number must be 10 digits";
-    }
-
-    return null;
-  }
-
-  String? _validateAmount(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return "Please enter an amount";
-    }
-
-    final amount = double.tryParse(value.trim());
-
-    if (amount == null) {
-      return "Enter a valid number";
-    }
-
-    if (amount <= 0) {
-      return "Amount must be greater than zero";
-    }
-
-    if (amount > _walletBalance) {
-      return "Insufficient wallet balance";
-    }
-
-    return null;
-  }
-
-  Future<void> _handleContinue() async {
-    if (_validateBank() != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_validateBank()!)),
-      );
-      return;
-    }
-
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    // TODO: Replace with actual bank transfer API call, then handle
-    // success/failure states (e.g. deduct wallet balance, show a receipt,
-    // or surface an error from the provider).
-    await Future.delayed(const Duration(seconds: 1));
-
-    if (!mounted) return;
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Bank transfer feature coming soon.")),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Transfer to Bank"),
-        backgroundColor: Colors.green,
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "Send Money",
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-              const SizedBox(height: 25),
-
-              DropdownButtonFormField<String>(
-                initialValue: selectedBank,
-                decoration: const InputDecoration(
-                  labelText: "Select Bank",
-                  border: OutlineInputBorder(),
-                ),
-                items: banks.map((bank) {
-                  return DropdownMenuItem(
-                    value: bank,
-                    child: Text(bank),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    selectedBank = value;
-                  });
-                  _resolveAccountName();
-                },
-              ),
-
-              const SizedBox(height: 20),
-
-              TextFormField(
-                controller: accountNumberController,
-                keyboardType: TextInputType.number,
-                validator: _validateAccountNumber,
-                onChanged: (_) => _resolveAccountName(),
-                decoration: const InputDecoration(
-                  labelText: "Account Number",
-                  border: OutlineInputBorder(),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
+      backgroundColor: _bgDark,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (_isResolvingAccount)
-                      const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    if (_isResolvingAccount) const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        _resolvedAccountName ?? "Account Name will appear here",
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
+                    _buildBankAndAccountCard(),
+                    const SizedBox(height: 16),
+                    if (_resolvedAccountName != null) _buildAmountCard(),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
-
-              const SizedBox(height: 20),
-
-              TextFormField(
-                controller: amountController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                validator: _validateAmount,
-                decoration: const InputDecoration(
-                  labelText: "Amount",
-                  prefixText: "₦ ",
-                  border: OutlineInputBorder(),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              TextFormField(
-                controller: narrationController,
-                decoration: const InputDecoration(
-                  labelText: "Narration (Optional)",
-                  border: OutlineInputBorder(),
-                ),
-              ),
-
-              const SizedBox(height: 35),
-
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                  ),
-                  onPressed: _isLoading ? null : _handleContinue,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text(
-                          "Continue",
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.white,
-                          ),
-                        ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+          ),
+          const Text(
+            'Transfer to Bank',
+            style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBankAndAccountCard() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _cardDark,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Select bank', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: _showBankPicker,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF262626),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _selectedBank ?? 'Choose a bank',
+                      style: TextStyle(
+                        color: _selectedBank != null ? Colors.white : Colors.white38,
+                        fontSize: 14,
+                        fontWeight: _selectedBank != null ? FontWeight.w600 : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.expand_more, color: Colors.white54),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text('Account number', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF262626),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: TextField(
+              controller: _accountController,
+              keyboardType: TextInputType.number,
+              maxLength: 10,
+              style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+              onChanged: (_) => _tryResolveAccount(),
+              decoration: const InputDecoration(
+                hintText: '0123456789',
+                hintStyle: TextStyle(color: Colors.white38),
+                border: InputBorder.none,
+                counterText: '',
+              ),
+            ),
+          ),
+          if (_isResolving) ...[
+            const SizedBox(height: 10),
+            const Row(
+              children: [
+                SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: _accentGreen),
+                ),
+                SizedBox(width: 10),
+                Text('Resolving account...', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              ],
+            ),
+          ],
+          if (_resolvedAccountName != null && !_isResolving) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: _accentGreen.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: _accentGreen),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: _accentGreen, size: 18),
+                  const SizedBox(width: 10),
+                  Text(
+                    _resolvedAccountName!,
+                    style: const TextStyle(color: _accentGreen, fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showBankPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _cardDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: _banks.map((b) {
+              return ListTile(
+                title: Text(b['name']!, style: const TextStyle(color: Colors.white)),
+                onTap: () {
+                  setState(() {
+                    _selectedBank = b['name'];
+                    _resolvedAccountName = null;
+                  });
+                  Navigator.pop(context);
+                  _tryResolveAccount();
+                },
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAmountCard() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _cardDark,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Amount', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _amountController,
+            keyboardType: TextInputType.number,
+            style: const TextStyle(color: Colors.white, fontSize: 20),
+            decoration: InputDecoration(
+              prefixText: '₦ ',
+              prefixStyle: const TextStyle(color: Colors.white, fontSize: 20),
+              filled: true,
+              fillColor: const Color(0xFF262626),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF262626),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: TextField(
+              controller: _noteController,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              decoration: const InputDecoration(
+                labelText: 'What\'s it for? (optional)',
+                labelStyle: TextStyle(color: Colors.white54, fontSize: 12),
+                border: InputBorder.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _accentGreen,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              ),
+              child: const Text('Continue', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+            ),
+          ),
+        ],
       ),
     );
   }
