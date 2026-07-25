@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'login_page.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -16,8 +17,10 @@ class _SplashPageState extends State<SplashPage> {
     super.initState();
     Timer(const Duration(seconds: 2), () {
       if (mounted) {
-        // TODO: navigate to your actual next page, e.g.:
-        // Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginPage()));
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+        );
       }
     });
   }
