@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'app_lock_page.dart';
 
 class AppLockWrapper extends StatefulWidget {
@@ -27,10 +28,15 @@ class _AppLockWrapperState extends State<AppLockWrapper> with WidgetsBindingObse
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Only ever lock if someone is actually signed in. New users going
+    // through signup, or anyone still on the splash/login/signup flow,
+    // should never see the lock screen.
+    final bool hasSignedInUser = FirebaseAuth.instance.currentUser != null;
+
     if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
       _wasBackgrounded = true;
     } else if (state == AppLifecycleState.resumed) {
-      if (_wasBackgrounded) {
+      if (_wasBackgrounded && hasSignedInUser) {
         setState(() => _isLocked = true);
       }
       _wasBackgrounded = false;
