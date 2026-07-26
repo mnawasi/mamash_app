@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'login_page.dart';
-import 'face_verification_page.dart';
+import 'dashboard_page.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -140,12 +140,11 @@ class _SecureRegistrationPageState extends State<SignupPage> {
         ),
       );
 
-      // Go straight into face verification, matching the flow already
-      // used after login, instead of sending the user back to log in
-      // again immediately after they just registered.
+      // Take the user straight into the dashboard after a successful
+      // signup, instead of sending them back to log in again.
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const FaceVerificationPage()),
+        MaterialPageRoute(builder: (_) => const DashboardPage()),
       );
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
+import 'signup_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -228,6 +230,13 @@ class _LoginPageState extends State<LoginPage> {
             TextSpan(
               text: 'Sign up',
               style: const TextStyle(color: _accentGreen, fontWeight: FontWeight.w600),
+              recognizer: TapGestureRecognizer()
+                ..onTap = () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SignupPage()),
+                  );
+                },
             ),
           ],
         ),
