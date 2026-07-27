@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'signup_page.dart';
+import 'dashboard_page.dart';
+import 'forgot_password_page.dart';
+
+enum _LoginMode { phone, email }
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -10,10 +16,15 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  _LoginMode _mode = _LoginMode.phone;
+
   final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
   bool _obscurePassword = true;
   bool _isLoading = false;
+  String? _error;
 
   static const Color _bgDark = Color(0xFF121212);
   static const Color _cardDark = Color(0xFF1E1E1E);
@@ -22,15 +33,120 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void dispose() {
     _phoneController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  void _handleLogin() {
-    setState(() => _isLoading = true);
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) setState(() => _isLoading = false);
+  String _normalizedPhone(String raw) {
+    final digits = raw.trim();
+    if (digits.startsWith('0')) {
+      return '+234${digits.substring(1)}';
+    }
+    if (digits.startsWith('+234')) {
+      return digits;
+    }
+    return '+234$digits';
+  }
+
+  Future<void> _handleLogin() async {
+    setState(() {
+      _error = null;
     });
+
+    if (_passwordController.text.isEmpty) {
+      setState(() => _error = "Please enter your password.");
+      return;
+    }
+
+    String? email;
+
+    if (_mode == _LoginMode.email) {
+      if (_emailController.text.trim().isEmpty) {
+        setState(() => _error = "Please enter your email address.");
+        return;
+      }
+      email = _emailController.text.trim();
+    } else {
+      if (_phoneController.text.trim().isEmpty) {
+        setState(() => _error = "Please enter your phone number.");
+        return;
+      }
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      if (_mode == _LoginMode.phone) {
+        // Look up the account's email by phone number in Firestore,
+        // since accounts are created with email/password at signup.
+        final phone = _normalizedPhone(_phoneController.text);
+        final query = await FirebaseFirestore.instance
+            .collection('users')
+            .where('phone', isEqualTo: phone)
+            .limit(1)
+            .get();
+
+        if (query.docs.isEmpty) {
+          if (!mounted) return;
+          setState(() {
+            _isLoading = false;
+            _error = "No account found with this phone number.";
+          });
+          return;
+        }
+
+        email = query.docs.first.data()['email'] as String?;
+
+        if (email == null) {
+          if (!mounted) return;
+          setState(() {
+            _isLoading = false;
+            _error = "This account has no email on file. Try logging in with email instead.";
+          });
+          return;
+        }
+      }
+
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email!,
+        password: _passwordController.text,
+      );
+
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const DashboardPage()),
+      );
+    } on FirebaseAuthException catch (e) {
+      String message;
+      switch (e.code) {
+        case 'user-not-found':
+          message = "No account found with these details.";
+          break;
+        case 'wrong-password':
+        case 'invalid-credential':
+          message = "Incorrect password. Try again.";
+          break;
+        case 'invalid-email':
+          message = "Enter a valid email address.";
+          break;
+        case 'too-many-requests':
+          message = "Too many attempts. Please wait and try again.";
+          break;
+        case 'network-request-failed':
+          message = "No internet connection. Check your network and try again.";
+          break;
+        default:
+          message = "Login failed. Please try again.";
+      }
+      setState(() => _error = message);
+    } catch (e) {
+      setState(() => _error = "Something went wrong. Please try again.");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -55,15 +171,26 @@ class _LoginPageState extends State<LoginPage> {
                 'Log in to continue to your wallet',
                 style: TextStyle(color: Colors.white54, fontSize: 14),
               ),
-              const SizedBox(height: 32),
-              _buildPhoneField(),
+              const SizedBox(height: 24),
+              _buildModeToggle(),
+              const SizedBox(height: 20),
+              if (_mode == _LoginMode.phone) _buildPhoneField() else _buildEmailField(),
               const SizedBox(height: 16),
               _buildPasswordField(),
+              if (_error != null) ...[
+                const SizedBox(height: 12),
+                Text(_error!, style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
+              ],
               const SizedBox(height: 12),
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ForgotPasswordPage()),
+                    );
+                  },
                   child: const Text('Forgot password?', style: TextStyle(color: _accentGreen, fontSize: 13)),
                 ),
               ),
@@ -100,6 +227,48 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  Widget _buildModeToggle() {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: _cardDark,
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Row(
+        children: [
+          Expanded(child: _modeButton('Phone', _LoginMode.phone)),
+          Expanded(child: _modeButton('Email', _LoginMode.email)),
+        ],
+      ),
+    );
+  }
+
+  Widget _modeButton(String label, _LoginMode mode) {
+    final bool selected = _mode == mode;
+    return GestureDetector(
+      onTap: () => setState(() {
+        _mode = mode;
+        _error = null;
+      }),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? _accentGreen : Colors.transparent,
+          borderRadius: BorderRadius.circular(26),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: selected ? Colors.black : Colors.white54,
+            fontSize: 13,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildPhoneField() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -128,6 +297,28 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildEmailField() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: _cardDark,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: TextField(
+        controller: _emailController,
+        keyboardType: TextInputType.emailAddress,
+        style: const TextStyle(color: Colors.white, fontSize: 15),
+        decoration: const InputDecoration(
+          hintText: 'Email address',
+          hintStyle: TextStyle(color: Colors.white38),
+          border: InputBorder.none,
+          isDense: true,
+          contentPadding: EdgeInsets.symmetric(vertical: 14),
+        ),
       ),
     );
   }
