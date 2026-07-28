@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// FinancePage
 /// A Flutter page spiritually similar to the OPay "Finance" screen:
@@ -16,6 +18,7 @@ class FinancePage extends StatefulWidget {
 class _FinancePageState extends State<FinancePage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  String _accountNumber = '';
 
   static const Color _bgDark = Color(0xFF111214);
   static const Color _cardDark = Color(0xFF1C1D20);
@@ -27,6 +30,18 @@ class _FinancePageState extends State<FinancePage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _loadAccountNumber();
+  }
+
+  Future<void> _loadAccountNumber() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    if (doc.exists && mounted) {
+      setState(() {
+        _accountNumber = doc.data()?['accountNumber'] ?? '';
+      });
+    }
   }
 
   @override
@@ -73,13 +88,23 @@ class _FinancePageState extends State<FinancePage>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            'Finance',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Finance',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Account No: $_accountNumber',
+                style: const TextStyle(color: Colors.white54, fontSize: 13),
+              ),
+            ],
           ),
           Container(
             width: 36,
