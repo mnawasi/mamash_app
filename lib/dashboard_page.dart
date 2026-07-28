@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'rewards/rewards_page.dart';
 
 import 'send_money_page.dart';
@@ -30,10 +32,28 @@ class _DashboardPageState extends State<DashboardPage> {
 
   bool _balanceHidden = false;
   int _selectedNavIndex = 0;
+  String _accountNumber = '';
 
   static const Color _bgColor = Color(0xFF111214);
   static const Color _cardColor = Color(0xFF1C1D20);
   static const Color _accent = Color(0xFF16C784);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAccountNumber();
+  }
+
+  Future<void> _loadAccountNumber() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    if (doc.exists && mounted) {
+      setState(() {
+        _accountNumber = doc.data()?['accountNumber'] ?? '';
+      });
+    }
+  }
 
   void _goTo(Widget page) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => page));
@@ -134,6 +154,11 @@ class _DashboardPageState extends State<DashboardPage> {
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    "Account No: $_accountNumber",
+                    style: const TextStyle(color: Colors.white70, fontSize: 13),
                   ),
                   const SizedBox(height: 18),
                   Row(
