@@ -120,6 +120,7 @@ class _SecureRegistrationPageState extends State<SignupPage> {
         'email': emailController.text.trim(),
         'phone': phoneController.text.trim(),
     'accountNumber': phoneController.text.trim(),
+    'accountNumber': phoneController.text.trim(),
         'createdAt': FieldValue.serverTimestamp(),
       });
 
