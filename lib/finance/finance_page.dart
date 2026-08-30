@@ -59,6 +59,8 @@ class _FinancePageState extends State<FinancePage>
     super.dispose();
   }
 
+  /// Live per-user finance summary. Missing fields default to 0 so a
+  /// brand new user always starts at zero, never someone else's numbers.
   Stream<DocumentSnapshot<Map<String, dynamic>>>? get _financeStream {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return null;
@@ -127,30 +129,36 @@ class _FinancePageState extends State<FinancePage>
     );
   }
 
+  // ---------------------------------------------------------------------
+  // Navigation helpers
+  // ---------------------------------------------------------------------
   void _openTargets() {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const TargetsPage()),
+      MaterialPageRoute(builder: (_) => TargetsPage()),
     );
   }
 
   void _openSafeBox() {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const SafeBoxPage()),
+      MaterialPageRoute(builder: (_) => SafeBoxPage()),
     );
   }
 
   void _openSpendAndSave() {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const SpendAndSavePage()),
+      MaterialPageRoute(builder: (_) => SpendAndSavePage()),
     );
   }
 
   void _openSavingChallenge() {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const SavingChallengePage()),
+      MaterialPageRoute(builder: (_) => SavingChallengePage()),
     );
   }
 
+  // ---------------------------------------------------------------------
+  // Header: title + settings icon
+  // ---------------------------------------------------------------------
   Widget _buildHeader() {
     return Padding(
       padding: const EdgeInsets.only(top: 12),
@@ -190,6 +198,9 @@ class _FinancePageState extends State<FinancePage>
     );
   }
 
+  // ---------------------------------------------------------------------
+  // Savings / Loan tabs (with "Hot" badge on Loan)
+  // ---------------------------------------------------------------------
   Widget _buildTabs() {
     return TabBar(
       controller: _tabController,
@@ -240,6 +251,9 @@ class _FinancePageState extends State<FinancePage>
     );
   }
 
+  // ---------------------------------------------------------------------
+  // Mint balance card + dark green available-balance breakdown
+  // ---------------------------------------------------------------------
   Widget _buildBalanceCard({
     required double totalBalance,
     required double interestToday,
@@ -257,6 +271,7 @@ class _FinancePageState extends State<FinancePage>
 
     return Column(
       children: [
+        // Top mint section
         Container(
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
@@ -363,6 +378,7 @@ class _FinancePageState extends State<FinancePage>
             ],
           ),
         ),
+        // Bottom dark-green breakdown section
         Container(
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
@@ -459,6 +475,9 @@ class _FinancePageState extends State<FinancePage>
     );
   }
 
+  // ---------------------------------------------------------------------
+  // Quick actions row (OWealth / Targets / SafeBox / Fixed / Spend & Save)
+  // ---------------------------------------------------------------------
   Widget _buildQuickActions() {
     final actions = [
       _QuickAction(label: 'OWealth', icon: Icons.waves, onTap: _openTargets),
@@ -535,6 +554,9 @@ class _FinancePageState extends State<FinancePage>
     );
   }
 
+  // ---------------------------------------------------------------------
+  // Promo banner: "Saving Challenge 2026"
+  // ---------------------------------------------------------------------
   Widget _buildPromoBanner() {
     return Container(
       width: double.infinity,
@@ -598,6 +620,9 @@ class _FinancePageState extends State<FinancePage>
   }
 }
 
+// ---------------------------------------------------------------------
+// Small data holder
+// ---------------------------------------------------------------------
 class _QuickAction {
   final String label;
   final IconData icon;

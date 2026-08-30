@@ -1,17 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'chat_message.dart';
 import 'offline_ai_service.dart';
-
-class ChatMessage {
-  final String text;
-  final bool isUser;
-  final DateTime timestamp;
-
-  ChatMessage({
-    required this.text,
-    required this.isUser,
-    required this.timestamp,
-  });
-}
 
 class AIAssistantPage extends StatefulWidget {
   const AIAssistantPage({super.key});
@@ -21,6 +13,9 @@ class AIAssistantPage extends StatefulWidget {
 }
 
 class _AIAssistantPageState extends State<AIAssistantPage> {
+  static const String _backendUrl =
+      'https://muhammadnawasi--683d6c0aa3f211f19a96160.web.val.run';
+
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
@@ -66,49 +61,56 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
     _messageController.clear();
     _scrollToBottom();
 
+    String reply;
     try {
-      // Using the local, offline keyword-matching responder for now.
-      //
-      // TODO: Once ready, replace this with a real call to YOUR OWN
-      // BACKEND endpoint, which in turn calls an LLM provider (e.g. the
-      // Anthropic API). Never call an AI provider's API directly from
-      // the Flutter app with an embedded API key — that key would be
-      // extractable from the compiled app binary by anyone. The correct
-      // shape is:
-      //   Flutter app -> your backend (auth-checked) -> AI provider
-      // Your backend can also inject the user's real account context
-      // (recent transactions, balance) so answers are personalized,
-      // without ever exposing that data or your API key client-side.
-      //
-      // A short artificial delay keeps the typing indicator feeling
-      // natural rather than the reply appearing instantly.
-      await Future.delayed(const Duration(milliseconds: 600));
-      final reply = OfflineAIService.getResponse(text);
-
-      if (!mounted) return;
-
-      setState(() {
-        _messages.add(ChatMessage(text: reply, isUser: false, timestamp: DateTime.now()));
-        _isSending = false;
-      });
-
-      _scrollToBottom();
+      reply = await _getAIReply();
     } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _messages.add(
-          ChatMessage(
-            text: "Sorry, I couldn't process that right now. Please try again.",
-            isUser: false,
-            timestamp: DateTime.now(),
-          ),
-        );
-        _isSending = false;
-      });
-
-      _scrollToBottom();
+      reply = OfflineAIService.getResponse(text);
     }
+
+    if (!mounted) return;
+
+    setState(() {
+      _messages.add(ChatMessage(text: reply, isUser: false, timestamp: DateTime.now()));
+      _isSending = false;
+    });
+
+    _scrollToBottom();
+  }
+
+  Future<String> _getAIReply() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception('Not signed in');
+    }
+    final idToken = await user.getIdToken();
+
+    final recentHistory = _messages
+        .sublist(_messages.length > 10 ? _messages.length - 10 : 0)
+        .map((m) => m.toApiMessage())
+        .toList();
+
+    final response = await http
+        .post(
+          Uri.parse(_backendUrl),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'idToken': idToken,
+            'history': recentHistory,
+          }),
+        )
+        .timeout(const Duration(seconds: 30));
+
+    if (response.statusCode != 200) {
+      throw Exception('Backend error: ${response.statusCode} ${response.body}');
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final reply = data['reply'] as String?;
+    if (reply == null || reply.isEmpty) {
+      throw Exception('Empty reply from backend');
+    }
+    return reply;
   }
 
   @override

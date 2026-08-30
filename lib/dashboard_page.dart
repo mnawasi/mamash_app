@@ -18,7 +18,7 @@ import 'notification_page.dart';
 import 'profile_page.dart';
 import 'wallet_page.dart';
 import 'cards/cards_page.dart';
-import 'finance_page.dart';
+import 'finance/finance_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});

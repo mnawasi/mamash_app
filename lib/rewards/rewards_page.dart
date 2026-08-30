@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 /// RewardsPage
-/// A Flutter page spiritually similar to the OPay "Rewards" screen:
+/// The Mamash "Rewards" screen:
 /// dark green header with cashback/voucher summary, a 4-icon quick
 /// action row, a tabbed "Hot Vouchers" card, and a "Daily Bonus" list.
 ///
-/// Drop this file into lib/ and push/route to `const RewardsPage()`.
+/// Cashback and Voucher values are now per-user, pulled live from
+/// Firestore (users/{uid}). New users default to 0 until they earn
+/// rewards through app activity.
+///
+/// Drop this file into lib/finance/ and push/route to `const RewardsPage()`.
 class RewardsPage extends StatefulWidget {
   const RewardsPage({super.key});
 
@@ -36,24 +42,56 @@ class _RewardsPageState extends State<RewardsPage>
     super.dispose();
   }
 
+  /// Live per-user rewards stream. Each user reads only their own
+  /// document, so cashback/voucher figures are never shared between
+  /// accounts. Missing fields default to 0.
+  Stream<DocumentSnapshot<Map<String, dynamic>>>? get _rewardsStream {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return null;
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('rewards')
+        .doc('summary')
+        .snapshots();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _bgDark,
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              _buildQuickActions(),
-              const SizedBox(height: 24),
-              _buildHotVouchersSection(),
-              const SizedBox(height: 24),
-              _buildDailyBonusSection(),
-              const SizedBox(height: 24),
-            ],
-          ),
+        child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+          stream: _rewardsStream,
+          builder: (context, snapshot) {
+            final data = snapshot.data?.data();
+
+            final double cashback =
+                (data?['cashback'] as num?)?.toDouble() ?? 0.0;
+            final double voucherValue =
+                (data?['voucherValue'] as num?)?.toDouble() ?? 0.0;
+            final int voucherCount =
+                (data?['voucherCount'] as num?)?.toInt() ?? 0;
+
+            return SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(
+                    cashback: cashback,
+                    voucherValue: voucherValue,
+                    voucherCount: voucherCount,
+                  ),
+                  _buildQuickActions(),
+                  const SizedBox(height: 24),
+                  _buildHotVouchersSection(),
+                  const SizedBox(height: 24),
+                  _buildDailyBonusSection(),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
@@ -62,7 +100,11 @@ class _RewardsPageState extends State<RewardsPage>
   // ---------------------------------------------------------------------
   // Header: title + cashback / voucher summary cards
   // ---------------------------------------------------------------------
-  Widget _buildHeader() {
+  Widget _buildHeader({
+    required double cashback,
+    required double voucherValue,
+    required int voucherCount,
+  }) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
@@ -101,8 +143,13 @@ class _RewardsPageState extends State<RewardsPage>
           const SizedBox(height: 24),
           Row(
             children: [
-              Expanded(child: _cashbackSummary()),
-              Expanded(child: _voucherSummary()),
+              Expanded(child: _cashbackSummary(cashback)),
+              Expanded(
+                child: _voucherSummary(
+                  voucherValue: voucherValue,
+                  voucherCount: voucherCount,
+                ),
+              ),
             ],
           ),
         ],
@@ -110,7 +157,7 @@ class _RewardsPageState extends State<RewardsPage>
     );
   }
 
-  Widget _cashbackSummary() {
+  Widget _cashbackSummary(double cashback) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -139,9 +186,9 @@ class _RewardsPageState extends State<RewardsPage>
               ),
             ),
             const SizedBox(width: 6),
-            const Text(
-              '₦ 30.60',
-              style: TextStyle(
+            Text(
+              '₦ ${cashback.toStringAsFixed(2)}',
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
@@ -155,7 +202,10 @@ class _RewardsPageState extends State<RewardsPage>
     );
   }
 
-  Widget _voucherSummary() {
+  Widget _voucherSummary({
+    required double voucherValue,
+    required int voucherCount,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -172,9 +222,9 @@ class _RewardsPageState extends State<RewardsPage>
                 color: _accentGreen,
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: const Text(
-                '₦85',
-                style: TextStyle(
+              child: Text(
+                '₦${voucherValue.toStringAsFixed(0)}',
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -185,20 +235,20 @@ class _RewardsPageState extends State<RewardsPage>
         ),
         const SizedBox(height: 8),
         Row(
-          children: const [
-            Icon(Icons.confirmation_number_outlined,
+          children: [
+            const Icon(Icons.confirmation_number_outlined,
                 color: Colors.white70, size: 20),
-            SizedBox(width: 6),
+            const SizedBox(width: 6),
             Text(
-              '5',
-              style: TextStyle(
+              '$voucherCount',
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            SizedBox(width: 4),
-            Icon(Icons.chevron_right, color: Colors.white70, size: 20),
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right, color: Colors.white70, size: 20),
           ],
         ),
       ],
@@ -332,9 +382,15 @@ class _RewardsPageState extends State<RewardsPage>
                   ],
                 ),
                 const SizedBox(height: 16),
-                _voucherRow(amount: '₦40', title: 'Data Voucher', sub: '₦3,000 available'),
+                _voucherRow(
+                    amount: '₦40',
+                    title: 'Data Voucher',
+                    sub: '₦3,000 available'),
                 const SizedBox(height: 10),
-                _voucherRow(amount: '₦10', title: 'Data Voucher', sub: '₦1,000 available'),
+                _voucherRow(
+                    amount: '₦10',
+                    title: 'Data Voucher',
+                    sub: '₦1,000 available'),
               ],
             ),
           ),
@@ -404,10 +460,17 @@ class _RewardsPageState extends State<RewardsPage>
   // ---------------------------------------------------------------------
   // Daily Bonus: list of bonus offers with a "Go" button each
   // ---------------------------------------------------------------------
+  // NOTE: these are the promotional offer definitions (same catalog for
+  // everyone), not a user's earned balance — that's why they're still
+  // static here. If you also want to track which bonuses a specific user
+  // has already claimed today, that would come from another per-user
+  // Firestore field (e.g. users/{uid}/rewards/summary.claimedBonusIds)
+  // and you'd grey out / disable the "Go" button for claimed ones. Say
+  // the word and I'll wire that up too.
   Widget _buildDailyBonusSection() {
     final bonuses = [
       _DailyBonus(
-        title: 'Share OPay',
+        title: 'Share App',
         reward: '+200',
         subtitle: 'Help a loved one get an account and get ₦200 Cashback',
         icon: Icons.people_alt,
