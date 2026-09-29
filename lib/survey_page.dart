@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SurveyPage extends StatefulWidget {
   const SurveyPage({super.key});
@@ -7,15 +9,43 @@ class SurveyPage extends StatefulWidget {
   State<SurveyPage> createState() => _SurveyPageState();
 }
 
+enum _QType { rating, choice, text }
+
+class _SurveyQuestion {
+  final String title;
+  final _QType type;
+  final List<String>? options;
+  const _SurveyQuestion(this.title, this.type, {this.options});
+}
+
 class _SurveyPageState extends State<SurveyPage> {
   static const Color _bgDark = Color(0xFF121212);
   static const Color _cardDark = Color(0xFF1E1E1E);
   static const Color _accentGreen = Color(0xFF1DBF8A);
 
   int _currentStep = 0;
-  final int _totalSteps = 4;
-  int _starRating = 0;
-  String? _selectedChoice;
+  bool _submitting = false;
+
+  final List<_SurveyQuestion> _questions = const [
+    _SurveyQuestion('How would you rate your experience?', _QType.rating),
+    _SurveyQuestion(
+      'What did you like most?',
+      _QType.choice,
+      options: ['Ease of use', 'Customer support', 'Pricing', 'Speed'],
+    ),
+    _SurveyQuestion(
+      'How likely are you to recommend Mamash Pay?',
+      _QType.choice,
+      options: ['Very likely', 'Likely', 'Not sure', 'Unlikely'],
+    ),
+    _SurveyQuestion('Any additional feedback?', _QType.text),
+  ];
+
+  int get _totalSteps => _questions.length;
+
+  // answers[stepIndex] = int (rating) | String (choice) | String (text)
+  final Map<int, dynamic> _answers = {};
+
   final TextEditingController _feedbackController = TextEditingController();
 
   @override
@@ -24,11 +54,40 @@ class _SurveyPageState extends State<SurveyPage> {
     super.dispose();
   }
 
-  void _goNext() {
+  void _goNext() async {
     if (_currentStep < _totalSteps - 1) {
       setState(() => _currentStep++);
     } else {
-      Navigator.pop(context);
+      await _submitSurvey();
+    }
+  }
+
+  Future<void> _submitSurvey() async {
+    setState(() => _submitting = true);
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) throw Exception('Not signed in');
+
+      await FirebaseFirestore.instance.collection('survey_responses').add({
+        'userId': uid,
+        'answers': _answers.map((k, v) => MapEntry(k.toString(), v)),
+        'submittedAt': FieldValue.serverTimestamp(),
+      });
+
+      // TODO: trigger your survey rewards backend here
+      // e.g. await FirebaseFunctions.instance
+      //     .httpsCallable('grantSurveyReward')
+      //     .call({'userId': uid});
+
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Submission failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _submitting = false);
     }
   }
 
@@ -81,7 +140,8 @@ class _SurveyPageState extends State<SurveyPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Question ${_currentStep + 1} of $_totalSteps', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+          Text('Question ${_currentStep + 1} of $_totalSteps',
+              style: const TextStyle(color: Colors.white54, fontSize: 12)),
           const SizedBox(height: 8),
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
@@ -99,6 +159,7 @@ class _SurveyPageState extends State<SurveyPage> {
   }
 
   Widget _buildQuestionCard() {
+    final q = _questions[_currentStep];
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -108,66 +169,61 @@ class _SurveyPageState extends State<SurveyPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'How would you rate your experience?',
-            style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+          Text(
+            q.title,
+            style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 14),
-          Row(
-            children: List.generate(5, (i) {
-              return IconButton(
-                onPressed: () => setState(() => _starRating = i + 1),
-                icon: Icon(
-                  i < _starRating ? Icons.star : Icons.star_border,
-                  color: Colors.amber,
-                  size: 28,
-                ),
-              );
-            }),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'What did you like most?',
-            style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 12),
-          ..._choiceTile('Ease of use'),
-          ..._choiceTile('Customer support'),
-          ..._choiceTile('Pricing'),
-          ..._choiceTile('Speed'),
-          const SizedBox(height: 20),
-          const Text(
-            'Any additional feedback?',
-            style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFF262626),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: TextField(
-              controller: _feedbackController,
-              maxLines: 3,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
-              decoration: const InputDecoration(
-                hintText: 'Tell us more...',
-                hintStyle: TextStyle(color: Colors.white38),
-                border: InputBorder.none,
-              ),
-            ),
-          ),
+          if (q.type == _QType.rating) _buildRating(),
+          if (q.type == _QType.choice) ...q.options!.expand((o) => _choiceTile(o)),
+          if (q.type == _QType.text) _buildTextField(),
         ],
       ),
     );
   }
 
+  Widget _buildRating() {
+    final current = (_answers[_currentStep] ?? 0) as int;
+    return Row(
+      children: List.generate(5, (i) {
+        return IconButton(
+          onPressed: () => setState(() => _answers[_currentStep] = i + 1),
+          icon: Icon(
+            i < current ? Icons.star : Icons.star_border,
+            color: Colors.amber,
+            size: 28,
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildTextField() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF262626),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: TextField(
+        controller: _feedbackController,
+        maxLines: 3,
+        style: const TextStyle(color: Colors.white, fontSize: 14),
+        decoration: const InputDecoration(
+          hintText: 'Tell us more...',
+          hintStyle: TextStyle(color: Colors.white38),
+          border: InputBorder.none,
+        ),
+        onChanged: (val) => _answers[_currentStep] = val,
+      ),
+    );
+  }
+
   List<Widget> _choiceTile(String label) {
-    final bool selected = _selectedChoice == label;
+    final bool selected = _answers[_currentStep] == label;
     return [
       InkWell(
-        onTap: () => setState(() => _selectedChoice = label),
+        onTap: () => setState(() => _answers[_currentStep] = label),
         borderRadius: BorderRadius.circular(10),
         child: Container(
           margin: const EdgeInsets.only(bottom: 8),
@@ -199,17 +255,23 @@ class _SurveyPageState extends State<SurveyPage> {
       child: SizedBox(
         width: double.infinity,
         child: ElevatedButton(
-          onPressed: _goNext,
+          onPressed: _submitting ? null : _goNext,
           style: ElevatedButton.styleFrom(
             backgroundColor: _accentGreen,
             foregroundColor: Colors.black,
             padding: const EdgeInsets.symmetric(vertical: 14),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
           ),
-          child: Text(
-            _currentStep < _totalSteps - 1 ? 'Next' : 'Submit',
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-          ),
+          child: _submitting
+              ? const SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                )
+              : Text(
+                  _currentStep < _totalSteps - 1 ? 'Next' : 'Submit',
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                ),
         ),
       ),
     );

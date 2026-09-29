@@ -1,3 +1,4 @@
+import 'survey_wall_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -54,6 +55,7 @@ class _WalletPageState extends State<WalletPage> {
         child: Column(
           children: [
             _buildHeader(),
+            _buildEarnRewardsButton(),
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
@@ -89,6 +91,28 @@ class _WalletPageState extends State<WalletPage> {
             style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildEarnRewardsButton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SurveyWallPage()),
+          ),
+          icon: Image.asset('assets/icons/send_money_icon.png', width: 24, height: 24),
+          label: const Text("Earn Rewards", style: TextStyle(color: _accentGreen, fontWeight: FontWeight.w600)),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            side: const BorderSide(color: _accentGreen),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+          ),
+        ),
       ),
     );
   }

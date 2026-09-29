@@ -153,14 +153,36 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _bgDark,
-      body: SafeArea(
+      body: Stack(
+        children: [
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: IgnorePointer(
+              child: Container(
+                height: 160,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      _accentGreen.withOpacity(0.18),
+                      _accentGreen.withOpacity(0.0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 40),
-              _buildLogo(),
+              _buildHeader(),
               const SizedBox(height: 32),
               const Text(
                 'Welcome back',
@@ -207,6 +229,8 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
       ),
+        ],
+      ),
     );
   }
 
@@ -215,15 +239,70 @@ class _LoginPageState extends State<LoginPage> {
       width: 64,
       height: 64,
       decoration: BoxDecoration(
-        color: _accentGreen,
+        gradient: const LinearGradient(
+          colors: [_accentGreen, Color(0xFF0FA968)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(18),
       ),
       child: const Center(
         child: Text(
           'M',
-          style: TextStyle(color: Colors.black, fontSize: 28, fontWeight: FontWeight.bold),
+          style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
         ),
       ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        _buildLogo(),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              RichText(
+                text: const TextSpan(
+                  children: [
+                    TextSpan(text: 'Mamash ', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                    TextSpan(text: 'Pay', style: TextStyle(color: _accentGreen, fontSize: 22, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 2),
+              const Text(
+                'FAST  •  SAFE  •  GLOBAL',
+                style: TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1.2),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          width: 56,
+          height: 56,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Transform.rotate(
+                angle: -0.3,
+                child: Container(
+                  width: 56,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: _accentGreen.withOpacity(0.5), width: 1),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+              ),
+              Icon(Icons.public, color: _accentGreen.withOpacity(0.6), size: 34),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -236,14 +315,14 @@ class _LoginPageState extends State<LoginPage> {
       ),
       child: Row(
         children: [
-          Expanded(child: _modeButton('Phone', _LoginMode.phone)),
-          Expanded(child: _modeButton('Email', _LoginMode.email)),
+          Expanded(child: _modeButton('Phone', _LoginMode.phone, Icons.phone_android)),
+          Expanded(child: _modeButton('Email', _LoginMode.email, Icons.mail_outline)),
         ],
       ),
     );
   }
 
-  Widget _modeButton(String label, _LoginMode mode) {
+  Widget _modeButton(String label, _LoginMode mode, IconData icon) {
     final bool selected = _mode == mode;
     return GestureDetector(
       onTap: () => setState(() {
@@ -256,14 +335,21 @@ class _LoginPageState extends State<LoginPage> {
           color: selected ? _accentGreen : Colors.transparent,
           borderRadius: BorderRadius.circular(26),
         ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: selected ? Colors.black : Colors.white54,
-            fontSize: 13,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-          ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 16, color: selected ? Colors.black : Colors.white54),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: selected ? Colors.black : Colors.white54,
+                fontSize: 13,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -279,6 +365,7 @@ class _LoginPageState extends State<LoginPage> {
       child: Row(
         children: [
           const Text('🇳🇬 +234', style: TextStyle(color: Colors.white70, fontSize: 14)),
+          const Icon(Icons.keyboard_arrow_down, color: Colors.white38, size: 18),
           const SizedBox(width: 10),
           Container(width: 1, height: 24, color: Colors.white24),
           const SizedBox(width: 10),
@@ -296,6 +383,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
           ),
+          const Icon(Icons.phone_outlined, color: _accentGreen, size: 20),
         ],
       ),
     );
@@ -335,6 +423,7 @@ class _LoginPageState extends State<LoginPage> {
         obscureText: _obscurePassword,
         style: const TextStyle(color: Colors.white, fontSize: 15),
         decoration: InputDecoration(
+          prefixIcon: const Icon(Icons.lock_outline, color: Colors.white54, size: 20),
           hintText: 'Password',
           hintStyle: const TextStyle(color: Colors.white38),
           border: InputBorder.none,
@@ -356,21 +445,49 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildLoginButton() {
     return SizedBox(
       width: double.infinity,
-      child: ElevatedButton(
-        onPressed: _isLoading ? null : _handleLogin,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _accentGreen,
-          foregroundColor: Colors.black,
-          padding: const EdgeInsets.symmetric(vertical: 15),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [_accentGreen, Color(0xFF0FA968)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          borderRadius: BorderRadius.circular(30),
         ),
-        child: _isLoading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
-              )
-            : const Text('Log in', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+        child: ElevatedButton(
+          onPressed: _isLoading ? null : _handleLogin,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            foregroundColor: Colors.black,
+            padding: const EdgeInsets.symmetric(vertical: 15),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+          ),
+          child: _isLoading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                )
+              : Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    const Text('Log in', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                    Positioned(
+                      right: 0,
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: const BoxDecoration(
+                          color: Colors.black,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.arrow_forward, color: Colors.white, size: 18),
+                      ),
+                    ),
+                  ],
+                ),
+        ),
       ),
     );
   }

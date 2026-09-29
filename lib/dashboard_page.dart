@@ -230,13 +230,13 @@ class _DashboardPageState extends State<DashboardPage> {
               crossAxisSpacing: 10,
               mainAxisSpacing: 18,
               children: [
-                _serviceTile(Icons.phone_android, "Airtime", () => _goTo(const AirtimePage())),
-                _serviceTile(Icons.wifi, "Data", () => _goTo(const BuyDataPage())),
+                _serviceTile(Icons.phone_android, "Airtime", () => _goTo(const AirtimePage()), iconWidget: Image.asset("assets/icons/airtime_icon.png", width: 28, height: 28)),
+                _serviceTile(Icons.wifi, "Data", () => _goTo(const BuyDataPage()), iconWidget: Image.asset("assets/icons/buy_data_icon.png", width: 28, height: 28)),
                 _serviceTile(Icons.sports_esports, "Betting", () => _goTo(const BettingPage())),
-                _serviceTile(Icons.lightbulb, "Bills", () => _goTo(const BillPaymentPage())),
+                _serviceTile(Icons.lightbulb, "Bills", () => _goTo(const BillPaymentPage()), iconWidget: Image.asset("assets/icons/bills_icon.png", width: 28, height: 28)),
                 _serviceTile(Icons.assignment, "Survey", () => _goTo(const SurveyPage())),
-                _serviceTile(Icons.public, "Transfer", () => _goTo(const InternationalTransferPage())),
-                _serviceTile(Icons.smart_toy, "Mamash AI", () => _goTo(const AIAssistantPage())),
+                _serviceTile(Icons.public, "Transfer", () => _goTo(const InternationalTransferPage()), iconWidget: Image.asset("assets/icons/transfer_icon.png", width: 28, height: 28)),
+                _serviceTile(Icons.smart_toy, "Mamash AI", () => _goTo(const AIAssistantPage()), iconWidget: Image.asset("assets/icons/mamash_ai_icon.png", width: 28, height: 28)),
                 _serviceTile(Icons.account_balance_wallet, "Wallet", () => _goTo(const WalletPage())),
               ],
             ),
@@ -296,7 +296,7 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _serviceTile(IconData icon, String label, VoidCallback onTap) {
+  Widget _serviceTile(IconData icon, String label, VoidCallback onTap, {Widget? iconWidget}) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -307,7 +307,7 @@ class _DashboardPageState extends State<DashboardPage> {
               color: _cardColor,
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: _accent, size: 22),
+            child: iconWidget ?? Icon(icon, color: _accent, size: 22),
           ),
           const SizedBox(height: 8),
           Text(
