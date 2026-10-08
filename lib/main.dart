@@ -21,6 +21,7 @@ Future<void> main() async {
       // TODO: Log this to a crash reporting tool (e.g. Firebase
       // Crashlytics once it's installed, or Sentry) so failures here are
       // visible in production, not just during local testing.
+      debugPrint("Firebase init failed: $e");
       firebaseInitialized = false;
     }
   }
