@@ -1,3 +1,5 @@
+import 'package:mamash_app/convert_page.dart';
+import 'package:mamash_app/main_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -13,7 +15,6 @@ import 'betting_page.dart';
 import 'survey_page.dart';
 import 'international_transfer_page.dart';
 import 'ai/ai_assistant_page.dart';
-import 'transaction_history_page.dart';
 import 'notification_page.dart';
 import 'profile_page.dart';
 import 'wallet_page.dart';
@@ -31,12 +32,14 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   static const double _nairaBalance = 0.00;
   static const double _dollarBalance = 0.00;
-  static const int _unreadNotifications = 3;
+  static const int _unreadNotifications = 0;
 
   bool _balanceHidden = false;
   int _selectedNavIndex = 0;
   String _accountNumber = '';
   String _dollarAccountNumber = '';
+  String _firstName = '';
+  bool _verified = false;
 
   static const Color _green = Color(0xFF16C784);
   static const Color _panel = Color(0xFF0A1A1F);
@@ -59,8 +62,35 @@ class _DashboardPageState extends State<DashboardPage> {
       setState(() {
         _accountNumber = doc.data()?['accountNumber'] ?? '';
         _dollarAccountNumber = doc.data()?['dollarAccountNumber'] ?? '';
+        _firstName = _pickFirstName(doc.data());
+        final dd = doc.data();
+        _verified = dd?['verified'] == true || dd?['isVerified'] == true || dd?['kycVerified'] == true;
       });
     }
+  }
+
+  String _pickFirstName(Map<String, dynamic>? d) {
+    String full = '';
+    if (d != null) {
+      for (final k in ['fullName', 'name', 'displayName', 'username']) {
+        final v = d[k];
+        if (v is String && v.trim().isNotEmpty) {
+          full = v.trim();
+          break;
+        }
+      }
+    }
+    if (full.isEmpty) full = FirebaseAuth.instance.currentUser?.displayName?.trim() ?? '';
+    if (full.isEmpty) return '';
+    final first = full.split(RegExp(r'\s+')).first;
+    return first[0].toUpperCase() + first.substring(1);
+  }
+
+  String get _displayName {
+    if (_firstName.isNotEmpty) return _firstName;
+    final n = FirebaseAuth.instance.currentUser?.displayName?.trim() ?? '';
+    if (n.isNotEmpty) return n.split(RegExp(r'\s+')).first;
+    return 'there';
   }
 
   void _goTo(Widget page) {
@@ -123,7 +153,6 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
         ),
       ),
-      bottomNavigationBar: _bottomNav(),
     );
   }
 
@@ -148,11 +177,13 @@ class _DashboardPageState extends State<DashboardPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Text('Hi, Mamash', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                    SizedBox(width: 6),
-                    Icon(Icons.verified, color: _green, size: 18),
+                    Text('Hi, $_displayName', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                    if (_verified) ...[
+                      const SizedBox(width: 6),
+                      const Icon(Icons.verified, color: _green, size: 18),
+                    ],
                   ],
                 ),
                 Row(
@@ -442,9 +473,9 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _actionRow() {
     final acts = [
       _Act(Icons.add, 'Add Money', 'Top up your wallet', () => _goTo(const AddMoneyPage())),
-      _Act(Icons.swap_horiz, 'Convert', 'NGN \u2194 USD & more', () => _soon('Convert')),
+      _Act(Icons.swap_horiz, 'Convert', 'NGN \u2194 USD & more', () => _goTo(const ConvertPage())),
       _Act(Icons.flight, 'Flight Pay', 'Book flights worldwide', () => _goTo(const FlightPayPage()), badge: 'New'),
-      _Act(Icons.credit_card, 'Card', 'Virtual & Physical', () => _goTo(const CardsPage())),
+      _Act(Icons.credit_card, 'Card', 'Virtual & Physical', () => ShellNav.index.value = 3),
     ];
     return _panelBox(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
@@ -660,7 +691,7 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
           ),
           const SizedBox(width: 8),
-          _greenButton('Explore \u2192', () => _goTo(const RewardsPage())),
+          _greenButton('Explore \u2192', () => ShellNav.index.value = 1),
         ],
       ),
     );
@@ -701,11 +732,11 @@ class _DashboardPageState extends State<DashboardPage> {
       onTap: (index) {
         setState(() => _selectedNavIndex = index);
         if (index == 1) {
-          _goTo(const RewardsPage());
+          ShellNav.index.value = 1;
         } else if (index == 2) {
           _goTo(const FinancePage());
         } else if (index == 3) {
-          _goTo(const CardsPage());
+          ShellNav.index.value = 3;
         } else if (index == 4) {
           _goTo(const ProfilePage());
         }

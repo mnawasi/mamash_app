@@ -1,3 +1,4 @@
+import 'splash_gate.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -109,7 +110,7 @@ class MamashApp extends StatelessWidget {
           : const _StartupErrorPage(),
       builder: (context, child) {
         if (child == null) return const SizedBox.shrink();
-        return AppLockWrapper(child: child);
+        return SplashGate(child: AppLockWrapper(child: child));
       },
     );
   }

@@ -1,3 +1,4 @@
+import 'package:mamash_app/main_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -125,7 +126,7 @@ class _CardsPageState extends State<CardsPage> {
     return Row(
       children: [
         GestureDetector(
-          onTap: () => Navigator.maybePop(context),
+          onTap: () => ShellNav.index.value = 0,
           child: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
         ),
         const SizedBox(width: 16),

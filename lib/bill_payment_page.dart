@@ -132,7 +132,6 @@ class _BillPaymentPageState extends State<BillPaymentPage> {
           ),
         ),
       ),
-      bottomNavigationBar: _bottomBar(),
     );
   }
 

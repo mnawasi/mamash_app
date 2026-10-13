@@ -599,13 +599,15 @@ class _BuyDataPageState extends State<BuyDataPage> {
 
   Widget _planGrid() {
     final plans = _current;
-    return GridView.count(
-      crossAxisCount: 2,
+    return GridView(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 10,
-      mainAxisSpacing: 10,
-      childAspectRatio: 1.9,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+        mainAxisExtent: 132,
+      ),
       children: List.generate(plans.length, (i) => _planCard(plans[i], i)),
     );
   }

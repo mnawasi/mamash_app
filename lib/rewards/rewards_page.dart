@@ -104,7 +104,6 @@ class _RewardsPageState extends State<RewardsPage> {
           ),
         ),
       ),
-      bottomNavigationBar: _bottomBar(),
     );
   }
 

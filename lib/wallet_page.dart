@@ -91,7 +91,6 @@ class _WalletPageState extends State<WalletPage> {
           ),
         ),
       ),
-      bottomNavigationBar: _bottomBar(),
     );
   }
 

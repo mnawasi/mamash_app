@@ -1,3 +1,4 @@
+import 'package:mamash_app/main_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -151,7 +152,6 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ),
       ),
-      bottomNavigationBar: _bottomBar(),
     );
   }
 
@@ -159,7 +159,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return Row(
       children: [
         GestureDetector(
-          onTap: () => Navigator.pop(context),
+          onTap: () => ShellNav.index.value = 0,
           child: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
         ),
         const SizedBox(width: 18),
@@ -473,7 +473,7 @@ class _ProfilePageState extends State<ProfilePage> {
         tile(Icons.credit_card, const [Color(0xFF3B82F6), Color(0xFF1D4ED8)], 'Virtual Card', 'Coming Soon',
             () => _msg('Virtual cards coming soon...')),
         tile(Icons.card_giftcard, const [Color(0xFFFFB23E), Color(0xFFB8740A)], 'Rewards', 'Get more',
-            () => _goTo(const RewardsPage())),
+            () => ShellNav.index.value = 1),
       ],
     );
   }

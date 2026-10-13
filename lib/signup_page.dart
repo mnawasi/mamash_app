@@ -1,3 +1,4 @@
+import 'package:mamash_app/main_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -146,7 +147,7 @@ class _SecureRegistrationPageState extends State<SignupPage> {
       // signup, instead of sending them back to log in again.
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const DashboardPage()),
+        MaterialPageRoute(builder: (_) => const MainShell()),
       );
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
