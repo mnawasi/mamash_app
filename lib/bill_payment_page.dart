@@ -200,90 +200,85 @@ class _BillPaymentPageState extends State<BillPaymentPage> {
 
   Widget _banner() {
     return Container(
-      height: 190,
-      padding: const EdgeInsets.all(16),
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
         gradient: const LinearGradient(colors: [Color(0xFF0A2A3A), Color(0xFF0A1B3A), Color(0xFF0B3A5A)]),
         border: Border.all(color: _green.withValues(alpha: 0.55), width: 1.2),
         boxShadow: [BoxShadow(color: _green.withValues(alpha: 0.18), blurRadius: 16)],
       ),
-      child: Stack(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // illustration
-          Positioned(
-            right: 10,
-            top: 0,
-            bottom: 0,
-            child: SizedBox(
-              width: 150,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Container(
-                    width: 92,
-                    height: 140,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(18),
-                      gradient: const LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Color(0xFF123A5E), Color(0xFF0A1B2E)],
-                      ),
-                      border: Border.all(color: const Color(0xFF3B82F6), width: 1.5),
-                      boxShadow: [BoxShadow(color: const Color(0xFF3B82F6).withValues(alpha: 0.4), blurRadius: 14)],
-                    ),
-                    child: const Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircleAvatar(radius: 20, backgroundColor: _green, child: Icon(Icons.check, color: Colors.black, size: 26)),
-                        SizedBox(height: 8),
-                        Text('Payment\nSuccessful',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
-                      ],
-                    ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: _green.withValues(alpha: 0.6)),
                   ),
-                  Positioned(left: 0, top: 6, child: _orb(Icons.lightbulb, const [Color(0xFFFFB23E), Color(0xFFE8590C)], 44)),
-                  Positioned(left: 4, bottom: 18, child: _orb(Icons.water_drop, const [Color(0xFF4A9BFF), Color(0xFF1D4ED8)], 40)),
-                  Positioned(right: 0, top: 0, child: _orb(Icons.wifi, const [Color(0xFF45A5FF), Color(0xFF1D5FE8)], 44)),
-                  Positioned(right: -6, top: 62, child: _orb(Icons.tv, const [Color(0xFFB36BFF), Color(0xFF6D28D9)], 40)),
-                  Positioned(right: 4, bottom: 8, child: _orb(Icons.shield, const [Color(0xFF3DDC84), Color(0xFF16A34A)], 40)),
-                ],
-              ),
+                  child: const Text('FAST \u2022 SECURE \u2022 RELIABLE',
+                      style: TextStyle(color: Color(0xFFB5E8D8), fontSize: 9.5, letterSpacing: 0.6)),
+                ),
+                const SizedBox(height: 12),
+                RichText(
+                  text: const TextSpan(
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, height: 1.15, color: Colors.white),
+                    children: [
+                      TextSpan(text: 'Pay All Your '),
+                      TextSpan(text: 'Bills in One Place', style: TextStyle(color: _green)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Text('Electricity, Airtime, Data, Cable TV and more...',
+                    style: TextStyle(color: Color(0xFFD0DDE8), fontSize: 11.5, height: 1.3)),
+              ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: _green.withValues(alpha: 0.6)),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 112,
+            height: 150,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  width: 62,
+                  height: 104,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0xFF123A5E), Color(0xFF0A1B2E)],
+                    ),
+                    border: Border.all(color: const Color(0xFF3B82F6), width: 1.4),
+                    boxShadow: [BoxShadow(color: const Color(0xFF3B82F6).withValues(alpha: 0.4), blurRadius: 12)],
+                  ),
+                  child: const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircleAvatar(radius: 15, backgroundColor: _green, child: Icon(Icons.check, color: Colors.black, size: 20)),
+                      SizedBox(height: 6),
+                      Text('Payment\nSuccessful',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.w600)),
+                    ],
+                  ),
                 ),
-                child: const Text('FAST \u2022 SECURE \u2022 RELIABLE',
-                    style: TextStyle(color: Color(0xFFB5E8D8), fontSize: 10, letterSpacing: 1)),
-              ),
-              const SizedBox(height: 12),
-              RichText(
-                text: const TextSpan(
-                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, height: 1.15, color: Colors.white),
-                  children: [
-                    TextSpan(text: 'Pay All Your '),
-                    TextSpan(text: 'Bills', style: TextStyle(color: _green)),
-                    TextSpan(text: '\nin One Place', style: TextStyle(color: _green)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 10),
-              const SizedBox(
-                width: 200,
-                child: Text('Electricity, Airtime, Data, Cable TV and more...',
-                    style: TextStyle(color: Color(0xFFD0DDE8), fontSize: 11.5)),
-              ),
-            ],
+                Positioned(left: 0, top: 2, child: _orb(Icons.lightbulb, const [Color(0xFFFFB23E), Color(0xFFE8590C)], 34)),
+                Positioned(right: 0, top: 0, child: _orb(Icons.wifi, const [Color(0xFF45A5FF), Color(0xFF1D5FE8)], 34)),
+                Positioned(right: -2, top: 58, child: _orb(Icons.tv, const [Color(0xFFB36BFF), Color(0xFF6D28D9)], 30)),
+                Positioned(left: 2, bottom: 14, child: _orb(Icons.water_drop, const [Color(0xFF4A9BFF), Color(0xFF1D4ED8)], 32)),
+                Positioned(right: 4, bottom: 2, child: _orb(Icons.shield, const [Color(0xFF3DDC84), Color(0xFF16A34A)], 32)),
+              ],
+            ),
           ),
         ],
       ),
@@ -325,8 +320,13 @@ class _BillPaymentPageState extends State<BillPaymentPage> {
                     onChanged: (v) => setState(() => _query = v),
                     style: const TextStyle(color: Colors.white, fontSize: 16),
                     decoration: const InputDecoration(
+                      filled: true,
+                      fillColor: Colors.transparent,
+                      isDense: true,
                       border: InputBorder.none,
-                      hintText: 'Search for a biller or service...',
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      hintText: 'Search billers or services',
                       hintStyle: TextStyle(color: Color(0xFF8C9BB0), fontSize: 16),
                     ),
                   ),

@@ -1,3 +1,6 @@
+import 'giftcards/gift_cards_page.dart';
+import 'dart:convert';
+import 'package:image_picker/image_picker.dart';
 import 'package:mamash_app/main_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -12,7 +15,6 @@ import 'verification_kyc_page.dart';
 import 'send_money_page.dart';
 import 'international_transfer_page.dart';
 import 'bill_payment_page.dart';
-import 'rewards/rewards_page.dart';
 import 'login_page.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -38,6 +40,9 @@ class _ProfilePageState extends State<ProfilePage> {
   String _email = '';
   String _phone = '';
   bool _verified = false;
+  int _tier = 1;
+  MemoryImage? _photoImage;
+  bool _photoBusy = false;
 
   @override
   void initState() {
@@ -55,6 +60,8 @@ class _ProfilePageState extends State<ProfilePage> {
     String email = user.email ?? '';
     String phone = user.phoneNumber ?? '';
     bool verified = false;
+    int tier = 1;
+    MemoryImage? photo;
     try {
       final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
       final d = doc.data();
@@ -74,6 +81,21 @@ class _ProfilePageState extends State<ProfilePage> {
         final p = pick(['phone', 'phoneNumber']);
         if (p.isNotEmpty) phone = p;
         verified = d['verified'] == true || d['isVerified'] == true || d['kycVerified'] == true;
+        final t = d['tier'];
+        int? parsedTier;
+        if (t is num) parsedTier = t.toInt();
+        if (t is String) parsedTier = int.tryParse(t.replaceAll(RegExp(r'[^0-9]'), ''));
+        if (parsedTier != null && parsedTier >= 1 && parsedTier <= 3) {
+          tier = parsedTier;
+        } else if (verified) {
+          tier = 2;
+        }
+        final ph = d['photoBase64'];
+        if (ph is String && ph.isNotEmpty) {
+          try {
+            photo = MemoryImage(base64Decode(ph));
+          } catch (_) {}
+        }
       }
     } catch (_) {
       // Keep whatever we have from FirebaseAuth.
@@ -86,6 +108,8 @@ class _ProfilePageState extends State<ProfilePage> {
       _email = email;
       _phone = phone;
       _verified = verified;
+      _tier = tier;
+      _photoImage = photo;
       _loading = false;
     });
   }
@@ -211,33 +235,123 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Future<void> _changePhoto() async {
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: _panel,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            ListTile(
+              leading: const Icon(Icons.photo_camera, color: _gold),
+              title: const Text('Take a photo', style: TextStyle(color: Colors.white)),
+              onTap: () => Navigator.pop(context, 'camera'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: _gold),
+              title: const Text('Choose from gallery', style: TextStyle(color: Colors.white)),
+              onTap: () => Navigator.pop(context, 'gallery'),
+            ),
+            if (_photoImage != null)
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Color(0xFFFF5A67)),
+                title: const Text('Remove photo', style: TextStyle(color: Color(0xFFFF5A67))),
+                onTap: () => Navigator.pop(context, 'remove'),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (choice == 'camera') {
+      await _pickPhoto(ImageSource.camera);
+    } else if (choice == 'gallery') {
+      await _pickPhoto(ImageSource.gallery);
+    } else if (choice == 'remove') {
+      await _removePhoto();
+    }
+  }
+
+  Future<void> _pickPhoto(ImageSource source) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    try {
+      final x = await ImagePicker().pickImage(source: source, maxWidth: 400, maxHeight: 400, imageQuality: 70);
+      if (x == null) return;
+      final bytes = await x.readAsBytes();
+      if (bytes.length > 300 * 1024) {
+        _msg('That photo is too large. Try another one.');
+        return;
+      }
+      if (mounted) setState(() => _photoBusy = true);
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'photoBase64': base64Encode(bytes),
+        'photoUpdatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      if (!mounted) return;
+      setState(() => _photoImage = MemoryImage(bytes));
+      _msg('Profile photo updated');
+    } catch (_) {
+      _msg('Could not update your photo. Please try again.');
+    } finally {
+      if (mounted) setState(() => _photoBusy = false);
+    }
+  }
+
+  Future<void> _removePhoto() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'photoBase64': FieldValue.delete(),
+      }, SetOptions(merge: true));
+      if (!mounted) return;
+      setState(() => _photoImage = null);
+      _msg('Photo removed');
+    } catch (_) {
+      _msg('Could not remove your photo. Please try again.');
+    }
+  }
+
   Widget _avatar() {
     return SizedBox(
       width: 112,
       height: 112,
       child: Stack(
         children: [
-          Container(
-            width: 112,
-            height: 112,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0xFF111B30),
-              border: Border.all(color: _gold, width: 3),
-              boxShadow: [BoxShadow(color: _gold.withValues(alpha: 0.35), blurRadius: 14)],
+          GestureDetector(
+            onTap: _changePhoto,
+            child: Container(
+              width: 112,
+              height: 112,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF111B30),
+                border: Border.all(color: _gold, width: 3),
+                boxShadow: [BoxShadow(color: _gold.withValues(alpha: 0.35), blurRadius: 14)],
+                image: _photoImage == null ? null : DecorationImage(image: _photoImage!, fit: BoxFit.cover),
+              ),
+              child: _photoImage == null ? const Icon(Icons.person, color: Color(0xFF3A4A6A), size: 78) : null,
             ),
-            child: const Icon(Icons.person, color: Color(0xFF3A4A6A), size: 78),
           ),
           Positioned(
             right: 0,
             bottom: 6,
             child: GestureDetector(
-              onTap: () => _msg('Photo upload coming soon...'),
+              onTap: _changePhoto,
               child: Container(
                 width: 34,
                 height: 34,
                 decoration: const BoxDecoration(shape: BoxShape.circle, color: _gold),
-                child: const Icon(Icons.photo_camera, color: Color(0xFF3A2A00), size: 20),
+                child: _photoBusy
+                    ? const Padding(
+                        padding: EdgeInsets.all(8),
+                        child: CircularProgressIndicator(strokeWidth: 2.5, color: Color(0xFF3A2A00)),
+                      )
+                    : const Icon(Icons.photo_camera, color: Color(0xFF3A2A00), size: 20),
               ),
             ),
           ),
@@ -466,12 +580,12 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return Row(
       children: [
-        tile(Icons.shield, const [Color(0xFF2BD98A), Color(0xFF0E7A4A)], 'Increase Limits', null,
+        tile(Icons.shield, const [Color(0xFF2BD98A), Color(0xFF0E7A4A)], 'Upgrade Tier', 'Increase limits',
             () => _goTo(const TransactionLimitsPage())),
-        tile(Icons.workspace_premium, const [Color(0xFF8B5CF6), Color(0xFF5B21B6)], 'VIP Tier', 'Tier 1',
-            () => _msg('VIP tiers coming soon...')),
+        tile(Icons.workspace_premium, const [Color(0xFF8B5CF6), Color(0xFF5B21B6)], 'VIP Tier', 'Tier $_tier',
+            () => _goTo(const TransactionLimitsPage())),
         tile(Icons.credit_card, const [Color(0xFF3B82F6), Color(0xFF1D4ED8)], 'Virtual Card', 'Coming Soon',
-            () => _msg('Virtual cards coming soon...')),
+            () => ShellNav.index.value = 3),
         tile(Icons.card_giftcard, const [Color(0xFFFFB23E), Color(0xFFB8740A)], 'Rewards', 'Get more',
             () => ShellNav.index.value = 1),
       ],

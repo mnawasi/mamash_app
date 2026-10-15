@@ -5,6 +5,10 @@ import '../airtime_page.dart';
 import '../bill_payment_page.dart';
 import '../wallet_page.dart';
 import '../profile_page.dart';
+import '../survey_page.dart';
+import 'refer_page.dart';
+import 'play4achild_page.dart';
+import 'voucher_pack_page.dart';
 
 class RewardsPage extends StatefulWidget {
   const RewardsPage({super.key});
@@ -88,7 +92,7 @@ class _RewardsPageState extends State<RewardsPage> {
                 _tiles(),
                 const SizedBox(height: 18),
                 _sectionHeader(Icons.local_fire_department, 'Hot Vouchers', 'Top deals, more value', 'View All',
-                    () => _msg('All vouchers coming soon...')),
+                    () => _goTo(const VoucherPackPage())),
                 const SizedBox(height: 10),
                 _voucherTabs(),
                 const SizedBox(height: 10),
@@ -182,7 +186,7 @@ class _RewardsPageState extends State<RewardsPage> {
   // ---------- Summary ----------
   Widget _summary() {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
         gradient: const LinearGradient(colors: [Color(0xFF0B4A3E), Color(0xFF08261F), Color(0xFF0A3A32)]),
@@ -192,77 +196,76 @@ class _RewardsPageState extends State<RewardsPage> {
       child: Row(
         children: [
           Expanded(
-            flex: 5,
-            child: Row(
-              children: [
-                _coin(54),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Text('Cashback', style: TextStyle(color: Colors.white, fontSize: 15)),
-                          const SizedBox(width: 6),
-                          GestureDetector(
-                            onTap: () => setState(() => _hidden = !_hidden),
-                            child: Icon(_hidden ? Icons.visibility_off : Icons.visibility, color: _green, size: 18),
-                          ),
-                        ],
-                      ),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(_hidden ? '\u20a6****' : '\u20a6${_cashback.toStringAsFixed(2)}',
-                            style: const TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w800)),
-                      ),
-                      const Text('Available balance', style: TextStyle(color: Color(0xFFB5D4D0), fontSize: 12)),
-                    ],
-                  ),
-                ),
-              ],
+            child: _summaryItem(
+              _coin(46),
+              'Cashback',
+              _hidden ? '\u20a6****' : '\u20a6${_cashback.toStringAsFixed(2)}',
+              'Available balance',
+              eye: true,
             ),
           ),
-          Container(width: 1, height: 70, margin: const EdgeInsets.symmetric(horizontal: 8), color: Colors.white12),
+          Container(width: 1, height: 64, margin: const EdgeInsets.symmetric(horizontal: 10), color: Colors.white12),
           Expanded(
-            flex: 4,
-            child: Row(
-              children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
-                    gradient: const LinearGradient(colors: [Color(0xFFB36BFF), Color(0xFF6D28D9)]),
-                    boxShadow: [BoxShadow(color: const Color(0xFF8B5CF6).withValues(alpha: 0.5), blurRadius: 10)],
-                  ),
-                  child: const Icon(Icons.local_activity, color: Colors.white, size: 30),
+            child: _summaryItem(
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  gradient: const LinearGradient(colors: [Color(0xFFB36BFF), Color(0xFF6D28D9)]),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Vouchers', style: TextStyle(color: Colors.white, fontSize: 15)),
-                      Text('$_voucherCount',
-                          style: const TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w800)),
-                      const Text('Available', style: TextStyle(color: Color(0xFFB5D4D0), fontSize: 12)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Expanded(
-            flex: 3,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: Icon(Icons.card_giftcard, color: Color(0xFF1FB88A), size: 62),
+                child: const Icon(Icons.local_activity, color: Colors.white, size: 26),
+              ),
+              'Vouchers',
+              '$_voucherCount',
+              'Available',
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _summaryItem(Widget leading, String label, String value, String sub, {bool eye = false}) {
+    return Row(
+      children: [
+        leading,
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Flexible(
+                    child: Text(label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white, fontSize: 14)),
+                  ),
+                  if (eye) ...[
+                    const SizedBox(width: 6),
+                    GestureDetector(
+                      onTap: () => setState(() => _hidden = !_hidden),
+                      child: Icon(_hidden ? Icons.visibility_off : Icons.visibility, color: _green, size: 17),
+                    ),
+                  ],
+                ],
+              ),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(value, style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w800)),
+              ),
+              Text(sub,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Color(0xFFB5D4D0), fontSize: 11.5)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -288,16 +291,16 @@ class _RewardsPageState extends State<RewardsPage> {
     return Row(
       children: [
         _tile(Icons.event_available, 'Daily Bonus', 'Get rewarded', const Color(0xFF22C55E),
-            const [Color(0xFF3DE08A), Color(0xFF16A34A)], _scrollToDaily),
+            const [Color(0xFF3DE08A), Color(0xFF16A34A)], () => _goTo(const SurveyPage())),
         const SizedBox(width: 8),
         _tile(Icons.person_add, 'Refer Friends', 'Earn together', const Color(0xFF3B82F6),
-            const [Color(0xFF3B9BFF), Color(0xFF1D5FE8)], () => _msg('Referrals coming soon...')),
+            const [Color(0xFF3B9BFF), Color(0xFF1D5FE8)], () => _goTo(const ReferPage())),
         const SizedBox(width: 8),
         _tile(Icons.volunteer_activism, 'Play4aChild', 'Support children', const Color(0xFFD99A1B),
-            const [Color(0xFFFFC53D), Color(0xFFB8740A)], () => _msg('Play4aChild coming soon...')),
+            const [Color(0xFFFFC53D), Color(0xFFB8740A)], () => _goTo(const Play4aChildPage())),
         const SizedBox(width: 8),
         _tile(Icons.local_activity, 'Voucher Pack', 'More rewards', const Color(0xFF8B5CF6),
-            const [Color(0xFFB36BFF), Color(0xFF6D28D9)], () => _msg('Voucher packs coming soon...')),
+            const [Color(0xFFB36BFF), Color(0xFF6D28D9)], () => _goTo(const VoucherPackPage())),
       ],
     );
   }
@@ -578,7 +581,7 @@ class _RewardsPageState extends State<RewardsPage> {
       child: Column(
         children: [
           row(Icons.groups, const [Color(0xFF2BD9A0), Color(0xFF0E8F70)], 'Share App', '+\u20a6200', const Color(0xFF3DE08A),
-              'Help a loved one get an account\nand get \u20a6200 Cashback', () => _msg('Sharing coming soon...')),
+              'Help a loved one get an account\nand get \u20a6200 Cashback', () => _goTo(const ReferPage())),
           row(Icons.smartphone, const [Color(0xFFB36BFF), Color(0xFF6D28D9)], 'Glo Airtime', 'Up to 6%', const Color(0xFF3DE08A),
               'Buy Airtime and get up to 6%\nCashback', () => _goTo(const AirtimePage())),
           row(Icons.description, const [Color(0xFFFFC53D), Color(0xFFB8740A)], 'Pay Bills', 'Earn cashback', const Color(0xFF3DE08A),

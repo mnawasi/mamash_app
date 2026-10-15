@@ -232,7 +232,7 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
 
   Widget _header() {
     return Container(
-      padding: EdgeInsets.fromLTRB(10, MediaQuery.of(context).padding.top + 8, 8, 14),
+      padding: EdgeInsets.fromLTRB(6, MediaQuery.of(context).padding.top + 8, 4, 14),
       decoration: const BoxDecoration(
         gradient: LinearGradient(colors: [Color(0xFF0A2A8A), Color(0xFF1546C8), Color(0xFF0A2A8A)]),
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
@@ -243,24 +243,31 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
             onTap: () => Navigator.maybePop(context),
             child: const Padding(
               padding: EdgeInsets.all(8),
-              child: Icon(Icons.arrow_back, color: Colors.white, size: 28),
+              child: Icon(Icons.arrow_back, color: Colors.white, size: 26),
             ),
           ),
-          const SizedBox(width: 4),
-          _avatar(62, online: true),
+          _avatar(56, online: true),
           const SizedBox(width: 12),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Mamash AI', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w700)),
-                Text('Your AI Assistant', style: TextStyle(color: Color(0xFFB9CBF5), fontSize: 14)),
+                Text('Mamash AI',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Colors.white, fontSize: 21, fontWeight: FontWeight.w700)),
+                Text('Your AI Assistant',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Color(0xFFB9CBF5), fontSize: 13)),
               ],
             ),
           ),
-          const Icon(Icons.verified_user, color: Color(0xFF6CC4FF), size: 30),
-          const SizedBox(width: 6),
-          const Text('Always here\nfor you', style: TextStyle(color: Color(0xFFDDE7FF), fontSize: 11.5, height: 1.2)),
+          const Tooltip(
+            message: 'Always here for you',
+            child: Icon(Icons.verified_user, color: Color(0xFF6CC4FF), size: 28),
+          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: Colors.white),
             onSelected: (v) {
@@ -398,9 +405,20 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
               controller: _controller,
               onSubmitted: (_) => _send(),
               textInputAction: TextInputAction.send,
+              cursorColor: _blue,
               style: const TextStyle(color: _ink, fontSize: 16),
               decoration: const InputDecoration(
+                filled: true,
+                fillColor: Colors.transparent,
+                hoverColor: Colors.transparent,
+                isDense: true,
+                contentPadding: EdgeInsets.symmetric(vertical: 12),
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                focusedErrorBorder: InputBorder.none,
                 hintText: 'Ask Mamash AI...',
                 hintStyle: TextStyle(color: Color(0xFF9AA6BE), fontSize: 16),
               ),
@@ -435,40 +453,65 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
   }
 
   Widget _footer() {
-    return Container(
-      padding: EdgeInsets.fromLTRB(14, 12, 14, 12 + MediaQuery.of(context).padding.bottom),
-      color: const Color(0xFF0A2A8A),
-      child: Row(
-        children: [
-          const Icon(Icons.public, color: Colors.white, size: 26),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Mamash  \u2022  Nigeria \u{1F1F3}\u{1F1EC}  Ghana \u{1F1EC}\u{1F1ED}  Canada \u{1F1E8}\u{1F1E6}  USA \u{1F1FA}\u{1F1F8}  England \u{1F1EC}\u{1F1E7}  + More',
-                style: TextStyle(color: Colors.white, fontSize: 13),
-              ),
-            ),
+    Widget item(String code, String name) => Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _FlagIcon(code),
+              const SizedBox(height: 5),
+              Text(name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w600)),
+            ],
           ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
-              color: const Color(0xFF0E7A6B).withValues(alpha: 0.4),
-              border: Border.all(color: const Color(0xFF3DE0B0)),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.verified_user, color: Color(0xFF3DE0B0), size: 18),
-                SizedBox(width: 6),
-                Text('Secure & Private',
-                    style: TextStyle(color: Color(0xFF3DE0B0), fontSize: 12.5, fontWeight: FontWeight.w700)),
-              ],
-            ),
+        );
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(14, 12, 14, 10 + MediaQuery.of(context).padding.bottom),
+      color: const Color(0xFF0A2A8A),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              item('NG', 'Nigeria'),
+              item('GH', 'Ghana'),
+              item('CA', 'Canada'),
+              item('US', 'USA'),
+              item('GB', 'England'),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Icon(Icons.public, color: Colors.white, size: 22),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text('Mamash  \u2022  More countries coming soon',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Color(0xFFDDE7FF), fontSize: 12)),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(22),
+                  color: const Color(0xFF0E7A6B).withValues(alpha: 0.4),
+                  border: Border.all(color: const Color(0xFF3DE0B0)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.verified_user, color: Color(0xFF3DE0B0), size: 18),
+                    SizedBox(width: 6),
+                    Text('Secure & Private',
+                        style: TextStyle(color: Color(0xFF3DE0B0), fontSize: 12.5, fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -486,5 +529,99 @@ class _Dot extends StatelessWidget {
       height: 8,
       decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF9AA6BE)),
     );
+  }
+}
+
+
+class _FlagIcon extends StatelessWidget {
+  final String code;
+  const _FlagIcon(this.code);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 36,
+      height: 24,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: Colors.white54, width: 0.8),
+      ),
+      child: _flag(),
+    );
+  }
+
+  Widget _flag() {
+    switch (code) {
+      case 'NG':
+        return const Row(
+          children: [
+            Expanded(child: ColoredBox(color: Color(0xFF008751))),
+            Expanded(child: ColoredBox(color: Colors.white)),
+            Expanded(child: ColoredBox(color: Color(0xFF008751))),
+          ],
+        );
+      case 'GH':
+        return Column(
+          children: [
+            const Expanded(child: ColoredBox(color: Color(0xFFCE1126))),
+            Expanded(
+              child: Container(
+                color: const Color(0xFFFCD116),
+                alignment: Alignment.center,
+                child: const Icon(Icons.star, color: Colors.black, size: 9),
+              ),
+            ),
+            const Expanded(child: ColoredBox(color: Color(0xFF006B3F))),
+          ],
+        );
+      case 'CA':
+        return Row(
+          children: [
+            const Expanded(child: ColoredBox(color: Color(0xFFD52B1E))),
+            Expanded(
+              flex: 2,
+              child: Container(
+                color: Colors.white,
+                alignment: Alignment.center,
+                child: const Icon(Icons.eco, color: Color(0xFFD52B1E), size: 14),
+              ),
+            ),
+            const Expanded(child: ColoredBox(color: Color(0xFFD52B1E))),
+          ],
+        );
+      case 'US':
+        return Stack(
+          children: [
+            Column(
+              children: List.generate(
+                7,
+                (i) => Expanded(child: ColoredBox(color: i.isEven ? const Color(0xFFB22234) : Colors.white)),
+              ),
+            ),
+            Positioned(
+              left: 0,
+              top: 0,
+              width: 16,
+              height: 13,
+              child: Container(
+                color: const Color(0xFF3C3B6E),
+                alignment: Alignment.center,
+                child: const Icon(Icons.star, color: Colors.white, size: 7),
+              ),
+            ),
+          ],
+        );
+      case 'GB':
+        return Stack(
+          children: [
+            const SizedBox.expand(child: ColoredBox(color: Colors.white)),
+            Center(child: Container(height: 6, color: const Color(0xFFCF142B))),
+            Center(child: Container(width: 6, color: const Color(0xFFCF142B))),
+          ],
+        );
+      default:
+        return const ColoredBox(color: Colors.grey);
+    }
   }
 }
