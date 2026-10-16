@@ -12,9 +12,6 @@ import 'security_page.dart';
 import 'help_support_page.dart';
 import 'personal_information_page.dart';
 import 'verification_kyc_page.dart';
-import 'send_money_page.dart';
-import 'international_transfer_page.dart';
-import 'bill_payment_page.dart';
 import 'login_page.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -142,18 +139,6 @@ class _ProfilePageState extends State<ProfilePage> {
     await FirebaseAuth.instance.signOut();
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => LoginPage()), (_) => false);
-  }
-
-  void _about() {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: _panel,
-        title: const Text('About Mamash Pay', style: TextStyle(color: Colors.white)),
-        content: const Text('Version 1.0.0\nYour money, worldwide.', style: TextStyle(color: Colors.white70, height: 1.5)),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
-      ),
-    );
   }
 
   @override
@@ -687,92 +672,4 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   // ---------- Bottom bar ----------
-  Widget _bottomBar() {
-    Widget item(IconData icon, String label, bool sel, VoidCallback onTap) {
-      return Expanded(
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onTap,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: sel ? _gold : const Color(0xFF7D8DB0), size: 28),
-              const SizedBox(height: 3),
-              Text(label,
-                  style: TextStyle(
-                      color: sel ? _gold : const Color(0xFF9AA8C8), fontSize: 12, fontWeight: sel ? FontWeight.w700 : FontWeight.w500)),
-              const SizedBox(height: 4),
-              Container(
-                width: 56,
-                height: 3,
-                decoration: BoxDecoration(color: sel ? _gold : Colors.transparent, borderRadius: BorderRadius.circular(2)),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return SafeArea(
-      top: false,
-      child: SizedBox(
-        height: 84,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: 68,
-              child: Container(
-                padding: const EdgeInsets.only(top: 10),
-                decoration: BoxDecoration(
-                  color: _panel,
-                  border: const Border(top: BorderSide(color: Color(0xFF1B2A44))),
-                ),
-                child: Row(
-                  children: [
-                    item(Icons.home_outlined, 'Home', false, () => Navigator.pop(context)),
-                    item(Icons.swap_horiz, 'Transfer', false, () => _goTo(const InternationalTransferPage())),
-                    const Expanded(child: SizedBox()),
-                    item(Icons.grid_view, 'Services', false, () => _goTo(const BillPaymentPage())),
-                    item(Icons.person, 'Profile', true, () {}),
-                  ],
-                ),
-              ),
-            ),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: GestureDetector(
-                  onTap: () => _goTo(const SendMoneyPage()),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 66,
-                        height: 66,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: const LinearGradient(colors: [Color(0xFFFFD36B), Color(0xFFE5A21C)]),
-                          border: Border.all(color: _bg, width: 4),
-                          boxShadow: [BoxShadow(color: _gold.withValues(alpha: 0.4), blurRadius: 14)],
-                        ),
-                        child: const Icon(Icons.send, color: Color(0xFF3A2A00), size: 30),
-                      ),
-                      const SizedBox(height: 2),
-                      const Text('Send', style: TextStyle(color: Color(0xFF9AA8C8), fontSize: 12)),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
