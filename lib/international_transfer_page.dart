@@ -8,13 +8,17 @@ class InternationalTransferPage extends StatefulWidget {
   State<InternationalTransferPage> createState() => _InternationalTransferPageState();
 }
 
+const double _kNgnPerUsd = 1450; // SAMPLE rate. Replace with a live rate.
+
 class _Dest {
   final String name;
   final String flag;
   final String currency;
   final String symbol;
-  final double ngnPerUnit; // sample indicative rate
-  const _Dest(this.name, this.flag, this.currency, this.symbol, this.ngnPerUnit);
+  final double perUsd; // SAMPLE: units of this currency per 1 US dollar
+  const _Dest(this.name, this.flag, this.currency, this.symbol, this.perUsd);
+
+  double get ngnPerUnit => _kNgnPerUsd / perUsd;
 }
 
 class _InternationalTransferPageState extends State<InternationalTransferPage> {
@@ -28,10 +32,36 @@ class _InternationalTransferPageState extends State<InternationalTransferPage> {
 
   // Sample indicative rates. Replace with a live rate source before launch.
   static const _dests = [
-    _Dest('United States', '\u{1F1FA}\u{1F1F8}', 'USD', '\$', 1450),
-    _Dest('United Kingdom', '\u{1F1EC}\u{1F1E7}', 'GBP', '\u00a3', 1850),
-    _Dest('Ghana', '\u{1F1EC}\u{1F1ED}', 'GHS', 'GH\u20b5', 95),
-    _Dest('Canada', '\u{1F1E8}\u{1F1E6}', 'CAD', 'C\$', 1050),
+    _Dest('Ghana', '\u{1F1EC}\u{1F1ED}', 'GHS', 'GH\u20b5', 12),
+    _Dest('Kenya', '\u{1F1F0}\u{1F1EA}', 'KES', 'KSh', 129),
+    _Dest('South Africa', '\u{1F1FF}\u{1F1E6}', 'ZAR', 'R', 18),
+    _Dest('Uganda', '\u{1F1FA}\u{1F1EC}', 'UGX', 'USh', 3700),
+    _Dest('Tanzania', '\u{1F1F9}\u{1F1FF}', 'TZS', 'TSh', 2600),
+    _Dest('Rwanda', '\u{1F1F7}\u{1F1FC}', 'RWF', 'RF', 1400),
+    _Dest('Zambia', '\u{1F1FF}\u{1F1F2}', 'ZMW', 'ZK', 27),
+    _Dest('Cameroon', '\u{1F1E8}\u{1F1F2}', 'XAF', 'FCFA', 600),
+    _Dest('Ivory Coast', '\u{1F1E8}\u{1F1EE}', 'XOF', 'CFA', 600),
+    _Dest('Senegal', '\u{1F1F8}\u{1F1F3}', 'XOF', 'CFA', 600),
+    _Dest('Egypt', '\u{1F1EA}\u{1F1EC}', 'EGP', 'E\u00a3', 48),
+    _Dest('Ethiopia', '\u{1F1EA}\u{1F1F9}', 'ETB', 'Br', 130),
+    _Dest('Malawi', '\u{1F1F2}\u{1F1FC}', 'MWK', 'MK', 1730),
+    _Dest('Mozambique', '\u{1F1F2}\u{1F1FF}', 'MZN', 'MT', 64),
+    _Dest('Botswana', '\u{1F1E7}\u{1F1FC}', 'BWP', 'P', 13.5),
+    _Dest('DR Congo', '\u{1F1E8}\u{1F1E9}', 'CDF', 'FC', 2800),
+    _Dest('Gambia', '\u{1F1EC}\u{1F1F2}', 'GMD', 'D', 70),
+    _Dest('Guinea', '\u{1F1EC}\u{1F1F3}', 'GNF', 'FG', 8600),
+    _Dest('Liberia', '\u{1F1F1}\u{1F1F7}', 'LRD', 'L\$', 190),
+    _Dest('Mali', '\u{1F1F2}\u{1F1F1}', 'XOF', 'CFA', 600),
+    _Dest('Sierra Leone', '\u{1F1F8}\u{1F1F1}', 'SLE', 'Le', 23),
+    _Dest('Burkina Faso', '\u{1F1E7}\u{1F1EB}', 'XOF', 'CFA', 600),
+    _Dest('Benin', '\u{1F1E7}\u{1F1EF}', 'XOF', 'CFA', 600),
+    _Dest('Niger', '\u{1F1F3}\u{1F1EA}', 'XOF', 'CFA', 600),
+    _Dest('Togo', '\u{1F1F9}\u{1F1EC}', 'XOF', 'CFA', 600),
+    _Dest('United States', '\u{1F1FA}\u{1F1F8}', 'USD', '\$', 1),
+    _Dest('United Kingdom', '\u{1F1EC}\u{1F1E7}', 'GBP', '\u00a3', 0.78),
+    _Dest('Canada', '\u{1F1E8}\u{1F1E6}', 'CAD', 'C\$', 1.38),
+    _Dest('Europe', '\u{1F1EA}\u{1F1FA}', 'EUR', '\u20ac', 0.92),
+    _Dest('Australia', '\u{1F1E6}\u{1F1FA}', 'AUD', 'A\$', 1.5),
   ];
 
   _Dest _dest = _dests.first;
@@ -71,19 +101,10 @@ class _InternationalTransferPageState extends State<InternationalTransferPage> {
   Future<void> _pickDest() async {
     final d = await showModalBottomSheet<_Dest>(
       context: context,
+      isScrollControlled: true,
       backgroundColor: _panel,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => ListView(
-        shrinkWrap: true,
-        children: _dests
-            .map((d) => ListTile(
-                  leading: Text(d.flag, style: const TextStyle(fontSize: 26)),
-                  title: Text(d.name, style: const TextStyle(color: Colors.white)),
-                  trailing: Text(d.currency, style: const TextStyle(color: Colors.white54)),
-                  onTap: () => Navigator.pop(context, d),
-                ))
-            .toList(),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+      builder: (_) => _DestPicker(dests: _dests),
     );
     if (d != null) setState(() => _dest = d);
   }
@@ -295,28 +316,40 @@ class _InternationalTransferPageState extends State<InternationalTransferPage> {
               const Text('Fast, secure cross-border transfers',
                   style: TextStyle(color: Color(0xFFC6D6D4), fontSize: 14)),
               const SizedBox(height: 16),
-              const Text('Supported countries', style: TextStyle(color: Colors.white70, fontSize: 12)),
+              Text('Supported countries  \u2022  ${_dests.length + 1}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
               const SizedBox(height: 8),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
                     _countryChip(_nigeriaFlag, 'Nigeria', null),
-                    ..._dests.map((d) => _countryChip(
-                          d.flag,
-                          d.name == 'United States'
-                              ? 'USA'
-                              : d.name == 'United Kingdom'
-                                  ? 'UK'
-                                  : d.name,
-                          d,
-                        )),
+                    ..._dests.take(5).map((d) => _countryChip(d.flag, _short(d.name), d)),
+                    _moreChip(),
                   ],
                 ),
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  String _short(String n) => n == 'United States' ? 'USA' : (n == 'United Kingdom' ? 'UK' : n);
+
+  Widget _moreChip() {
+    final more = _dests.length - 5;
+    return GestureDetector(
+      onTap: _pickDest,
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0A1A1D),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _green),
+        ),
+        child: Text('+$more more', style: const TextStyle(color: _green, fontSize: 13, fontWeight: FontWeight.w700)),
       ),
     );
   }
@@ -649,6 +682,92 @@ class _InternationalTransferPageState extends State<InternationalTransferPage> {
             Text('Continue', style: TextStyle(color: Color(0xFF04201A), fontSize: 20, fontWeight: FontWeight.w800)),
             SizedBox(width: 10),
             Icon(Icons.arrow_forward, color: Color(0xFF04201A), size: 24),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+class _DestPicker extends StatefulWidget {
+  final List<_Dest> dests;
+  const _DestPicker({required this.dests});
+
+  @override
+  State<_DestPicker> createState() => _DestPickerState();
+}
+
+class _DestPickerState extends State<_DestPicker> {
+  String _q = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final q = _q.trim().toLowerCase();
+    final list = widget.dests
+        .where((d) => q.isEmpty || d.name.toLowerCase().contains(q) || d.currency.toLowerCase().contains(q))
+        .toList();
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.78,
+        child: Column(
+          children: [
+            const SizedBox(height: 10),
+            Container(
+              width: 42,
+              height: 4,
+              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0F1B1F),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFF243A40)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.search, color: Color(0xFF9FB0B5)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: TextField(
+                        onChanged: (v) => setState(() => _q = v),
+                        cursorColor: const Color(0xFF1FE5A0),
+                        style: const TextStyle(color: Colors.white, fontSize: 16),
+                        decoration: const InputDecoration(
+                          filled: true,
+                          fillColor: Colors.transparent,
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          hintText: 'Search country or currency',
+                          hintStyle: TextStyle(color: Color(0xFF7D8D92), fontSize: 16),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Expanded(
+              child: list.isEmpty
+                  ? const Center(child: Text('No country found', style: TextStyle(color: Colors.white54)))
+                  : ListView.builder(
+                      itemCount: list.length,
+                      itemBuilder: (_, i) {
+                        final d = list[i];
+                        return ListTile(
+                          leading: Text(d.flag, style: const TextStyle(fontSize: 30)),
+                          title: Text(d.name, style: const TextStyle(color: Colors.white, fontSize: 16)),
+                          trailing: Text(d.currency, style: const TextStyle(color: Colors.white54, fontSize: 14)),
+                          onTap: () => Navigator.pop(context, d),
+                        );
+                      },
+                    ),
+            ),
           ],
         ),
       ),

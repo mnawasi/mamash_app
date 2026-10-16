@@ -161,7 +161,7 @@ class _FlightPayPageState extends State<FlightPayPage> {
             const SizedBox(height: 20),
             const Text('Why Flight Pay?', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
             const SizedBox(height: 10),
-            _perk(Icons.public, '200+ Countries', 'Book flights worldwide'),
+            _perk(Icons.public, '30+ Countries', 'Book flights worldwide'),
             _perk(Icons.verified_user, 'Best Rates', 'Pay from your Naira or Dollar wallet'),
             _perk(Icons.bolt, 'Instant Booking', 'Get your ticket in minutes'),
           ],

@@ -411,7 +411,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Global Transfers', style: TextStyle(color: Colors.white, fontSize: 8)),
-                          Text('200+ Countries', style: TextStyle(color: Colors.white54, fontSize: 8)),
+                          Text('30+ Countries', style: TextStyle(color: Colors.white54, fontSize: 8)),
                         ],
                       ),
                       Icon(Icons.chevron_right, color: _green, size: 14),
@@ -546,7 +546,7 @@ class _DashboardPageState extends State<DashboardPage> {
       _Svc(Icons.sports_esports, 'Betting', 'Play & win', amber, () => _goTo(const BettingPage())),
       _Svc(Icons.receipt_long, 'Bills', 'Pay electricity, DSTV, Water & more', purple, () => _goTo(const BillPaymentPage())),
       _Svc(Icons.assignment_turned_in, 'Survey', 'Earn rewards', green, () => _goTo(const SurveyPage()), badge: 'New'),
-      _Svc(Icons.public, 'International Transfer', 'Send to 200+ countries', blue,
+      _Svc(Icons.public, 'International Transfer', 'Send to 30+ countries', blue,
           () => _goTo(const InternationalTransferPage())),
       _Svc(Icons.smart_toy, 'Mamash AI', 'Your personal assistant', purple, () => _goTo(const AIAssistantPage())),
       _Svc(Icons.account_balance_wallet, 'Wallet', 'Manage your funds', green, () => _goTo(const WalletPage())),
@@ -645,7 +645,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     children: [
                       Icon(Icons.public, color: _green, size: 11),
                       SizedBox(width: 3),
-                      Text('200+ Countries', style: TextStyle(color: Colors.white70, fontSize: 9)),
+                      Text('30+ Countries', style: TextStyle(color: Colors.white70, fontSize: 9)),
                       SizedBox(width: 8),
                       Icon(Icons.verified_user, color: _green, size: 11),
                       SizedBox(width: 3),

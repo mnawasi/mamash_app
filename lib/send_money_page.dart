@@ -1,3 +1,6 @@
+import 'package:mamash_app/country_config.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'transfer_to_mamash_page.dart';
 import 'international_transfer_page.dart';
@@ -20,6 +23,31 @@ class _SendMoneyPageState extends State<SendMoneyPage> {
   static const Color _purple = Color(0xFF9B6BFF);
 
   bool _hidden = false;
+  CountryConfig _country = CountryConfig.all[0];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCountry();
+  }
+
+  Future<void> _loadCountry() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final name = doc.data()?['country'];
+      if (name is String && mounted) {
+        setState(() => _country = CountryConfig.fromName(name));
+      }
+    } catch (_) {}
+  }
+
+  // Currency mark for the little circle: GH\u20b5 becomes \u20b5, C$ becomes $.
+  String _mark(CountryConfig c) {
+    final m = c.symbol.replaceAll(RegExp(r'[A-Za-z]'), '');
+    return m.isEmpty ? c.currencyCode.substring(0, 1) : m;
+  }
 
   void _goTo(Widget page) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => page));
@@ -104,8 +132,9 @@ class _SendMoneyPageState extends State<SendMoneyPage> {
 
   // ---------- Balance ----------
   Widget _balanceCard() {
-    final naira = _hidden ? '\u20a6 ****' : '\u20a6 ${_nairaBalance.toStringAsFixed(2)}';
-    final dollar = _hidden ? '\$ ****' : '\$ ${_dollarBalance.toStringAsFixed(2)}';
+    final second = _country.currencyCode == 'USD' ? CountryConfig.all[0] : CountryConfig.all[3];
+    final naira = _hidden ? '${_country.symbol} ****' : '${_country.symbol} ${_nairaBalance.toStringAsFixed(2)}';
+    final dollar = _hidden ? '${second.symbol} ****' : '${second.symbol} ${_dollarBalance.toStringAsFixed(2)}';
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -151,10 +180,10 @@ class _SendMoneyPageState extends State<SendMoneyPage> {
                   ),
                   child: Row(
                     children: [
-                      Expanded(child: _walletItem('\u20a6', const Color(0xFF0E8F63), naira, 'Naira Wallet')),
+                      Expanded(child: _walletItem(_mark(_country), const Color(0xFF0E8F63), naira, '${_country.currencyName} Wallet')),
                       Container(width: 1, height: 36, color: Colors.white24),
                       const SizedBox(width: 10),
-                      Expanded(child: _walletItem('\$', const Color(0xFF1D4ED8), dollar, 'Dollar Wallet')),
+                      Expanded(child: _walletItem(_mark(second), const Color(0xFF1D4ED8), dollar, '${second.currencyName} Wallet')),
                     ],
                   ),
                 ),
