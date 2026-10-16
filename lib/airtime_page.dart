@@ -1,3 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class AirtimePage extends StatefulWidget {
@@ -15,6 +17,14 @@ class _Country {
   const _Country(this.name, this.flag, this.dial, this.networks);
 }
 
+class _Amt {
+  final String symbol;
+  final List<int> presets;
+  final int min;
+  final double usdPerUnit; // SAMPLE rate for the "~ USD" hint. Replace with a live rate.
+  const _Amt(this.symbol, this.presets, this.min, this.usdPerUnit);
+}
+
 class _AirtimePageState extends State<AirtimePage> {
   static const Color _bg = Color(0xFF050B14);
   static const Color _panel = Color(0xFF0A1422);
@@ -26,18 +36,50 @@ class _AirtimePageState extends State<AirtimePage> {
 
   static const _countries = [
     _Country('Nigeria', '\u{1F1F3}\u{1F1EC}', '+234', ['MTN', 'Airtel', 'Glo', '9mobile']),
-    _Country('Ghana', '\u{1F1EC}\u{1F1ED}', '+233', ['MTN', 'Vodafone', 'AirtelTigo']),
-    _Country('Canada', '\u{1F1E8}\u{1F1E6}', '+1', ['Rogers', 'Bell', 'Telus']),
-    _Country('USA', '\u{1F1FA}\u{1F1F8}', '+1', ['AT&T', 'T-Mobile', 'Verizon']),
-    _Country('England', '\u{1F1EC}\u{1F1E7}', '+44', ['Vodafone', 'EE', 'O2']),
+    _Country('Ghana', '\u{1F1EC}\u{1F1ED}', '+233', ['MTN', 'Telecel (Vodafone)', 'AT (AirtelTigo)']),
+    _Country('Canada', '\u{1F1E8}\u{1F1E6}', '+1', ['Rogers', 'Bell', 'Telus', 'Freedom Mobile', 'Fido', 'Koodo', 'Virgin Plus', 'Public Mobile']),
+    _Country('USA', '\u{1F1FA}\u{1F1F8}', '+1', ['AT&T', 'T-Mobile', 'Verizon', 'Cricket', 'Metro by T-Mobile', 'Boost Mobile', 'Mint Mobile', 'Visible', 'Straight Talk']),
+    _Country('England', '\u{1F1EC}\u{1F1E7}', '+44', ['Vodafone', 'EE', 'O2', 'Three', 'giffgaff', 'Lebara', 'Lycamobile', 'Tesco Mobile']),
   ];
 
-  static const _presets = [100, 200, 500, 1000, 2000, 5000, 10000, 20000];
+  // Quick amounts and the currency shown for each country.
+  static const Map<String, _Amt> _amounts = {
+    'Nigeria': _Amt('\u20a6', [100, 200, 500, 1000, 2000, 5000, 10000, 20000], 50, 0.00069),
+    'Ghana': _Amt('GH\u20b5', [1, 2, 5, 10, 20, 50], 1, 0.083),
+    'Canada': _Amt('C\$', [10, 20, 30, 50], 5, 0.72),
+    'USA': _Amt('\$', [10, 20, 25, 50], 5, 1.0),
+    'England': _Amt('\u00a3', [5, 10, 20, 30], 2, 1.28),
+  };
 
   _Country _country = _countries.first;
   String _network = 'MTN';
   int? _amount;
+
+  _Amt get _amt => _amounts[_country.name] ?? _amounts['Nigeria']!;
   final _phone = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserCountry();
+  }
+
+  Future<void> _loadUserCountry() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final name = doc.data()?['country'];
+      if (name is! String) return;
+      final match = _countries.where((c) => c.name == name).toList();
+      if (match.isNotEmpty && mounted) {
+        setState(() {
+          _country = match.first;
+          _network = match.first.networks.first;
+        });
+      }
+    } catch (_) {}
+  }
 
   @override
   void dispose() {
@@ -59,7 +101,9 @@ class _AirtimePageState extends State<AirtimePage> {
     return b.toString();
   }
 
-  String _usd(int n) => (n / _ngnPerUsd).toStringAsFixed(2);
+  String _usd(int n) => (n * _amt.usdPerUnit).toStringAsFixed(2);
+
+  String _usdHint(int n) => _country.name == 'USA' ? ' ' : '~ ${_usd(n)} USD';
 
   Color _netColor(String n) {
     switch (n) {
@@ -71,6 +115,44 @@ class _AirtimePageState extends State<AirtimePage> {
         return const Color(0xFF2DAA3F);
       case '9mobile':
         return const Color(0xFF0B6B3A);
+      case 'Telecel (Vodafone)':
+      case 'Vodafone':
+        return const Color(0xFFE60000);
+      case 'AT (AirtelTigo)':
+        return const Color(0xFF0057B8);
+      case 'Rogers':
+      case 'Verizon':
+      case 'Fido':
+        return const Color(0xFFCD040B);
+      case 'Bell':
+      case 'AT&T':
+      case 'O2':
+        return const Color(0xFF0057B8);
+      case 'Telus':
+        return const Color(0xFF4B286D);
+      case 'T-Mobile':
+      case 'Metro by T-Mobile':
+        return const Color(0xFFE20074);
+      case 'EE':
+      case 'Visible':
+        return const Color(0xFF007A7A);
+      case 'Three':
+      case 'Cricket':
+        return const Color(0xFF2B2B2B);
+      case 'giffgaff':
+      case 'Boost Mobile':
+      case 'Koodo':
+        return const Color(0xFFE8590C);
+      case 'Lycamobile':
+      case 'Lebara':
+      case 'Tesco Mobile':
+        return const Color(0xFF1D4ED8);
+      case 'Freedom Mobile':
+      case 'Virgin Plus':
+      case 'Mint Mobile':
+      case 'Public Mobile':
+      case 'Straight Talk':
+        return const Color(0xFF6D28D9);
       default:
         return const Color(0xFF2A5BD7);
     }
@@ -98,6 +180,7 @@ class _AirtimePageState extends State<AirtimePage> {
     setState(() {
       _country = c;
       _network = c.networks.first;
+      _amount = null;
     });
   }
 
@@ -132,8 +215,8 @@ class _AirtimePageState extends State<AirtimePage> {
           autofocus: true,
           keyboardType: TextInputType.number,
           style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            prefixText: '\u20a6 ',
+          decoration: InputDecoration(
+            prefixText: '${_amt.symbol} ',
             prefixStyle: TextStyle(color: Colors.white),
             hintText: 'Enter amount',
             hintStyle: TextStyle(color: Colors.white38),
@@ -149,7 +232,7 @@ class _AirtimePageState extends State<AirtimePage> {
       ),
     );
     if (v == null) return;
-    if (v < 50) return _msg('Minimum amount is \u20a650');
+    if (v < _amt.min) return _msg('Minimum amount is ${_amt.symbol}${_fmt(_amt.min)}');
     setState(() => _amount = v);
   }
 
@@ -164,7 +247,7 @@ class _AirtimePageState extends State<AirtimePage> {
         backgroundColor: _panel,
         title: const Text('Confirm top-up', style: TextStyle(color: Colors.white)),
         content: Text(
-          '\u20a6${_fmt(_amount!)} $_network airtime\nto ${_country.dial} ${_phone.text.trim()}\n(${_country.name})',
+          '${_amt.symbol}${_fmt(_amount!)} $_network airtime\nto ${_country.dial} ${_phone.text.trim()}\n(${_country.name})',
           style: const TextStyle(color: Colors.white70, height: 1.5),
         ),
         actions: [
@@ -525,7 +608,7 @@ class _AirtimePageState extends State<AirtimePage> {
   }
 
   Widget _amountCard() {
-    final custom = _amount != null && !_presets.contains(_amount);
+    final custom = _amount != null && !_amt.presets.contains(_amount);
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: _card(),
@@ -547,7 +630,7 @@ class _AirtimePageState extends State<AirtimePage> {
             crossAxisSpacing: 8,
             mainAxisSpacing: 8,
             childAspectRatio: 1.3,
-            children: _presets.map((a) {
+            children: _amt.presets.map((a) {
               final sel = _amount == a;
               return GestureDetector(
                 onTap: () => setState(() => _amount = a),
@@ -562,13 +645,13 @@ class _AirtimePageState extends State<AirtimePage> {
                     children: [
                       FittedBox(
                         fit: BoxFit.scaleDown,
-                        child: Text('\u20a6${_fmt(a)}',
+                        child: Text('${_amt.symbol}${_fmt(a)}',
                             style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800)),
                       ),
                       const SizedBox(height: 2),
                       FittedBox(
                         fit: BoxFit.scaleDown,
-                        child: Text('~ ${_usd(a)} USD', style: const TextStyle(color: Colors.white54, fontSize: 10)),
+                        child: Text(_usdHint(a), style: const TextStyle(color: Colors.white54, fontSize: 10)),
                       ),
                     ],
                   ),
@@ -593,7 +676,7 @@ class _AirtimePageState extends State<AirtimePage> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      custom ? '\u20a6${_fmt(_amount!)}  (~ ${_usd(_amount!)} USD)' : 'Or enter custom amount',
+                      custom ? '${_amt.symbol}${_fmt(_amount!)}${_country.name == 'USA' ? '' : '  (~ ${_usd(_amount!)} USD)'}' : 'Or enter custom amount',
                       style: TextStyle(color: custom ? Colors.white : Colors.white70, fontSize: 15),
                     ),
                   ),

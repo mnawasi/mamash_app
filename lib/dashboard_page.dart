@@ -1,3 +1,4 @@
+import 'package:mamash_app/country_config.dart';
 import 'package:mamash_app/convert_page.dart';
 import 'package:mamash_app/main_shell.dart';
 import 'package:flutter/material.dart';
@@ -38,6 +39,7 @@ class _DashboardPageState extends State<DashboardPage> {
   int _selectedNavIndex = 0;
   String _accountNumber = '';
   String _dollarAccountNumber = '';
+  CountryConfig _country = CountryConfig.all[0];
   String _firstName = '';
   bool _verified = false;
 
@@ -62,6 +64,7 @@ class _DashboardPageState extends State<DashboardPage> {
       setState(() {
         _accountNumber = doc.data()?['accountNumber'] ?? '';
         _dollarAccountNumber = doc.data()?['dollarAccountNumber'] ?? '';
+        _country = CountryConfig.fromName(doc.data()?['country'] as String?);
         _firstName = _pickFirstName(doc.data());
         final dd = doc.data();
         _verified = dd?['verified'] == true || dd?['isVerified'] == true || dd?['kycVerified'] == true;
@@ -268,8 +271,9 @@ class _DashboardPageState extends State<DashboardPage> {
 
   // ---------- Balance card ----------
   Widget _balanceCard() {
-    final naira = _balanceHidden ? '\u20a6 ****' : '\u20a6${_nairaBalance.toStringAsFixed(2)}';
-    final dollar = _balanceHidden ? '\$ ****' : '\$${_dollarBalance.toStringAsFixed(2)}';
+    final naira = _balanceHidden ? '${_country.symbol} ****' : '${_country.symbol}${_nairaBalance.toStringAsFixed(2)}';
+    final second = _country.currencyCode == 'USD' ? CountryConfig.all[0] : CountryConfig.all[3];
+    final dollar = _balanceHidden ? '${second.symbol} ****' : '${second.symbol}${_dollarBalance.toStringAsFixed(2)}';
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -280,7 +284,7 @@ class _DashboardPageState extends State<DashboardPage> {
       ),
       child: Row(
         children: [
-          Expanded(child: _balanceSide('\u{1F1F3}\u{1F1EC}', 'Naira Balance', naira, _accountNumber)),
+          Expanded(child: _balanceSide(_country.flag, '${_country.currencyName} Balance', naira, _accountNumber)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 6),
             child: Column(
@@ -302,7 +306,7 @@ class _DashboardPageState extends State<DashboardPage> {
               ],
             ),
           ),
-          Expanded(child: _balanceSide('\u{1F1FA}\u{1F1F8}', 'Dollar Balance', dollar, _dollarAccountNumber)),
+          Expanded(child: _balanceSide(second.flag, '${second.currencyName} Balance', dollar, _dollarAccountNumber)),
         ],
       ),
     );

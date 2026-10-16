@@ -1,3 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class BuyDataPage extends StatefulWidget {
@@ -32,11 +34,10 @@ class _BuyDataPageState extends State<BuyDataPage> {
 
   static const _countries = [
     _Country('Nigeria', '\u{1F1F3}\u{1F1EC}', '+234', ['MTN', 'Airtel', 'Glo', '9mobile']),
-    _Country('Ghana', '\u{1F1EC}\u{1F1ED}', '+233', ['MTN', 'Vodafone', 'AirtelTigo']),
-    _Country('Niger', '\u{1F1F3}\u{1F1EA}', '+227', ['Airtel', 'Moov']),
-    _Country('Canada', '\u{1F1E8}\u{1F1E6}', '+1', ['Rogers', 'Bell', 'Telus']),
-    _Country('USA', '\u{1F1FA}\u{1F1F8}', '+1', ['AT&T', 'T-Mobile', 'Verizon']),
-    _Country('England', '\u{1F1EC}\u{1F1E7}', '+44', ['Vodafone', 'EE', 'O2']),
+    _Country('Ghana', '\u{1F1EC}\u{1F1ED}', '+233', ['MTN', 'Telecel (Vodafone)', 'AT (AirtelTigo)']),
+    _Country('Canada', '\u{1F1E8}\u{1F1E6}', '+1', ['Rogers', 'Bell', 'Telus', 'Freedom Mobile', 'Fido', 'Koodo', 'Virgin Plus', 'Public Mobile']),
+    _Country('USA', '\u{1F1FA}\u{1F1F8}', '+1', ['AT&T', 'T-Mobile', 'Verizon', 'Cricket', 'Metro by T-Mobile', 'Boost Mobile', 'Mint Mobile', 'Visible', 'Straight Talk']),
+    _Country('England', '\u{1F1EC}\u{1F1E7}', '+44', ['Vodafone', 'EE', 'O2', 'Three', 'giffgaff', 'Lebara', 'Lycamobile', 'Tesco Mobile']),
   ];
 
   static const _tabs = [
@@ -93,7 +94,92 @@ class _BuyDataPageState extends State<BuyDataPage> {
   int _selected = 0;
   final _phone = TextEditingController();
 
-  List<_Plan> get _current => _plans[_tab]!;
+  // SAMPLE plans for other countries, in their own currency, with no cashback.
+  // Replace these with the plan list from your top-up provider.
+  static const Map<String, Map<String, List<_Plan>>> _otherPlans = {
+    'Ghana': {
+      'Hot': [
+        _Plan('500MB', '1 Day', 3, 0),
+        _Plan('1GB', '1 Day', 5, 0, tag: 'POPULAR'),
+        _Plan('3GB', '7 Days', 15, 0),
+        _Plan('6GB', '7 Days', 25, 0, tag: 'BEST VALUE'),
+        _Plan('12GB', '30 Days', 50, 0),
+        _Plan('30GB', '30 Days', 100, 0),
+      ],
+      'Daily': [_Plan('500MB', '1 Day', 3, 0), _Plan('1GB', '1 Day', 5, 0), _Plan('2GB', '1 Day', 8, 0)],
+      'Weekly': [_Plan('3GB', '7 Days', 15, 0), _Plan('6GB', '7 Days', 25, 0)],
+      'Monthly': [_Plan('12GB', '30 Days', 50, 0), _Plan('30GB', '30 Days', 100, 0)],
+    },
+    'Canada': {
+      'Hot': [
+        _Plan('1GB', '7 Days', 10, 0, tag: 'POPULAR'),
+        _Plan('3GB', '30 Days', 20, 0),
+        _Plan('5GB', '30 Days', 30, 0, tag: 'BEST VALUE'),
+        _Plan('10GB', '30 Days', 45, 0),
+      ],
+      'Daily': [_Plan('500MB', '1 Day', 5, 0), _Plan('1GB', '1 Day', 8, 0)],
+      'Weekly': [_Plan('1GB', '7 Days', 10, 0), _Plan('2GB', '7 Days', 15, 0)],
+      'Monthly': [_Plan('3GB', '30 Days', 20, 0), _Plan('5GB', '30 Days', 30, 0), _Plan('10GB', '30 Days', 45, 0), _Plan('20GB', '30 Days', 60, 0)],
+    },
+    'USA': {
+      'Hot': [
+        _Plan('2GB', '30 Days', 15, 0),
+        _Plan('5GB', '30 Days', 25, 0, tag: 'POPULAR'),
+        _Plan('10GB', '30 Days', 35, 0, tag: 'BEST VALUE'),
+        _Plan('20GB', '30 Days', 45, 0),
+      ],
+      'Daily': [_Plan('500MB', '1 Day', 3, 0), _Plan('1GB', '1 Day', 5, 0)],
+      'Weekly': [_Plan('1GB', '7 Days', 8, 0), _Plan('3GB', '7 Days', 15, 0)],
+      'Monthly': [_Plan('5GB', '30 Days', 25, 0), _Plan('10GB', '30 Days', 35, 0), _Plan('20GB', '30 Days', 45, 0)],
+    },
+    'England': {
+      'Hot': [
+        _Plan('3GB', '30 Days', 5, 0),
+        _Plan('10GB', '30 Days', 8, 0, tag: 'POPULAR'),
+        _Plan('20GB', '30 Days', 10, 0, tag: 'BEST VALUE'),
+        _Plan('50GB', '30 Days', 15, 0),
+      ],
+      'Daily': [_Plan('500MB', '1 Day', 2, 0), _Plan('1GB', '1 Day', 3, 0)],
+      'Weekly': [_Plan('2GB', '7 Days', 5, 0), _Plan('5GB', '7 Days', 8, 0)],
+      'Monthly': [_Plan('10GB', '30 Days', 8, 0), _Plan('20GB', '30 Days', 10, 0), _Plan('50GB', '30 Days', 15, 0)],
+    },
+  };
+
+  static const Map<String, String> _symbols = {
+    'Nigeria': '\u20a6',
+    'Ghana': 'GH\u20b5',
+    'Canada': 'C\$',
+    'USA': '\$',
+    'England': '\u00a3',
+  };
+
+  Map<String, List<_Plan>> get _planSet => _otherPlans[_country.name] ?? _plans;
+  String get _sym => _symbols[_country.name] ?? '\u20a6';
+  List<List<Object>> get _visibleTabs => _tabs.where((t) => _planSet.containsKey(t[0] as String)).toList();
+  List<_Plan> get _current => _planSet[_tab] ?? _planSet['Hot']!;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserCountry();
+  }
+
+  Future<void> _loadUserCountry() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final name = doc.data()?['country'];
+      if (name is! String) return;
+      final match = _countries.where((c) => c.name == name).toList();
+      if (match.isNotEmpty && mounted) {
+        setState(() {
+          _country = match.first;
+          _network = match.first.networks.first;
+        });
+      }
+    } catch (_) {}
+  }
 
   @override
   void dispose() {
@@ -125,6 +211,44 @@ class _BuyDataPageState extends State<BuyDataPage> {
         return const Color(0xFF2DAA3F);
       case '9mobile':
         return const Color(0xFF0B6B3A);
+      case 'Telecel (Vodafone)':
+      case 'Vodafone':
+        return const Color(0xFFE60000);
+      case 'AT (AirtelTigo)':
+        return const Color(0xFF0057B8);
+      case 'Rogers':
+      case 'Verizon':
+      case 'Fido':
+        return const Color(0xFFCD040B);
+      case 'Bell':
+      case 'AT&T':
+      case 'O2':
+        return const Color(0xFF0057B8);
+      case 'Telus':
+        return const Color(0xFF4B286D);
+      case 'T-Mobile':
+      case 'Metro by T-Mobile':
+        return const Color(0xFFE20074);
+      case 'EE':
+      case 'Visible':
+        return const Color(0xFF007A7A);
+      case 'Three':
+      case 'Cricket':
+        return const Color(0xFF2B2B2B);
+      case 'giffgaff':
+      case 'Boost Mobile':
+      case 'Koodo':
+        return const Color(0xFFE8590C);
+      case 'Lycamobile':
+      case 'Lebara':
+      case 'Tesco Mobile':
+        return const Color(0xFF1D4ED8);
+      case 'Freedom Mobile':
+      case 'Virgin Plus':
+      case 'Mint Mobile':
+      case 'Public Mobile':
+      case 'Straight Talk':
+        return const Color(0xFF6D28D9);
       default:
         return const Color(0xFF2A5BD7);
     }
@@ -152,6 +276,8 @@ class _BuyDataPageState extends State<BuyDataPage> {
     setState(() {
       _country = c;
       _network = c.networks.first;
+      _tab = 'Hot';
+      _selected = 0;
     });
   }
 
@@ -185,7 +311,7 @@ class _BuyDataPageState extends State<BuyDataPage> {
         backgroundColor: _panel,
         title: const Text('Confirm purchase', style: TextStyle(color: Colors.white)),
         content: Text(
-          '${plan.size} $_network data (${plan.validity})\n\u20a6${_fmt(plan.price)}\nto ${_country.dial} ${_phone.text.trim()}',
+          '${plan.size} $_network data (${plan.validity})\n$_sym${_fmt(plan.price)}\nto ${_country.dial} ${_phone.text.trim()}',
           style: const TextStyle(color: Colors.white70, height: 1.5),
         ),
         actions: [
@@ -561,7 +687,7 @@ class _BuyDataPageState extends State<BuyDataPage> {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
-          children: _tabs.map((t) {
+          children: _visibleTabs.map((t) {
             final name = t[0] as String;
             final icon = t[1] as IconData;
             final sel = _tab == name;
@@ -675,7 +801,7 @@ class _BuyDataPageState extends State<BuyDataPage> {
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerLeft,
-                          child: Text('\u20a6${_fmt(p.price)}',
+                          child: Text('$_sym${_fmt(p.price)}',
                               style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
                         ),
                       ),
@@ -689,12 +815,12 @@ class _BuyDataPageState extends State<BuyDataPage> {
                             ),
                     ],
                   ),
-                  Row(
+                  if (p.cashback > 0) Row(
                     children: [
                       const Icon(Icons.account_balance_wallet, color: _green, size: 12),
                       const SizedBox(width: 4),
                       Flexible(
-                        child: Text('\u20a6${_fmt(p.cashback)} Cashback',
+                        child: Text('$_sym${_fmt(p.cashback)} Cashback',
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(color: _green, fontSize: 11)),
                       ),

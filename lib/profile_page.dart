@@ -652,6 +652,8 @@ class _ProfilePageState extends State<ProfilePage> {
               'Daily and monthly limits', () => _goTo(const TransactionLimitsPage())),
           row(Icons.lock, const [Color(0xFFFFA23E), Color(0xFFC2570C)], 'Security',
               'PIN, biometric, device management', () => _goTo(const SecurityPage())),
+          row(Icons.card_giftcard, const [Color(0xFFEC4899), Color(0xFF9D174D)], 'Gift Cards',
+              'Send, redeem and track gift cards', () => _goTo(const GiftCardsPage())),
           row(Icons.headset_mic, const [Color(0xFF8B5CF6), Color(0xFF5B21B6)], 'Help & Support',
               'FAQs, contact us, live chat', () => _goTo(const HelpSupportPage())),
           row(Icons.info_outline, const [Color(0xFF4A5A7A), Color(0xFF2A3550)], 'About Mamash Pay',
