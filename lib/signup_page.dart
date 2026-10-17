@@ -100,8 +100,8 @@ class _SignupState extends State<SignupPage> {
           'accountNumber': account,
           'createdAt': FieldValue.serverTimestamp(),
         });
-      } catch (_) {
-        // The account exists; the profile can be completed later.
+      } catch (e) {
+        _msg('Account created, but your profile could not be saved: $e');
       }
       try {
         await user.sendEmailVerification();

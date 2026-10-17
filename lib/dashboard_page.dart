@@ -53,7 +53,7 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    _loadAccountNumbers();
+    _loadAccountNumbers().then((_) => _checkCountry());
   }
 
   Future<void> _loadAccountNumbers() async {
@@ -94,6 +94,64 @@ class _DashboardPageState extends State<DashboardPage> {
     final n = FirebaseAuth.instance.currentUser?.displayName?.trim() ?? '';
     if (n.isNotEmpty) return n.split(RegExp(r'\s+')).first;
     return 'there';
+  }
+
+  Future<void> _checkCountry() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || !mounted) return;
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final c = doc.data()?['country'];
+      if (c is String && c.isNotEmpty) return;
+    } catch (e) {
+      debugPrint('Country check failed: $e');
+      return;
+    }
+    if (!mounted) return;
+    final picked = await showModalBottomSheet<CountryConfig>(
+      context: context,
+      isDismissible: false,
+      enableDrag: false,
+      backgroundColor: const Color(0xFF0A1A1F),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 20, 20, 4),
+              child: Text('Choose your country',
+                  style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
+            ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Text('This sets your currency, mobile networks and phone code.',
+                  style: TextStyle(color: Colors.white60, fontSize: 13)),
+            ),
+            ...CountryConfig.all.map((c) => ListTile(
+                  leading: Text(c.flag, style: const TextStyle(fontSize: 28)),
+                  title: Text(c.name, style: const TextStyle(color: Colors.white, fontSize: 16)),
+                  trailing: Text(c.currencyCode, style: const TextStyle(color: Colors.white54)),
+                  onTap: () => Navigator.pop(context, c),
+                )),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'country': picked.name,
+        'currency': picked.currencyCode,
+      }, SetOptions(merge: true));
+      if (!mounted) return;
+      setState(() => _country = picked);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not save your country: $e')));
+      }
+    }
   }
 
   void _goTo(Widget page) {
