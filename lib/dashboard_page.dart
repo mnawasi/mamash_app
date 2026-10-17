@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'rewards/rewards_page.dart';
 import 'send_money_page.dart';
 import 'receive_money_page.dart';
 import 'add_money_page.dart';
@@ -19,7 +18,6 @@ import 'ai/ai_assistant_page.dart';
 import 'notification_page.dart';
 import 'profile_page.dart';
 import 'wallet_page.dart';
-import 'cards/cards_page.dart';
 import 'finance/finance_page.dart';
 import 'flight_pay_page.dart';
 
@@ -787,49 +785,6 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  // ---------- Bottom nav ----------
-  Widget _bottomNav() {
-    return BottomNavigationBar(
-      currentIndex: _selectedNavIndex,
-      onTap: (index) {
-        setState(() => _selectedNavIndex = index);
-        if (index == 1) {
-          ShellNav.index.value = 1;
-        } else if (index == 2) {
-          _goTo(const FinancePage());
-        } else if (index == 3) {
-          ShellNav.index.value = 3;
-        } else if (index == 4) {
-          _goTo(const ProfilePage());
-        }
-      },
-      backgroundColor: const Color(0xFF07100F),
-      selectedItemColor: _green,
-      unselectedItemColor: Colors.white54,
-      type: BottomNavigationBarType.fixed,
-      showUnselectedLabels: true,
-      items: [
-        const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(
-          icon: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              const Icon(Icons.card_giftcard_outlined),
-              Positioned(
-                right: -2,
-                top: -2,
-                child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle)),
-              ),
-            ],
-          ),
-          label: 'Rewards',
-        ),
-        const BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Finance'),
-        const BottomNavigationBarItem(icon: Icon(Icons.credit_card_outlined), label: 'Cards'),
-        const BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Me'),
-      ],
-    );
-  }
 }
 
 class _Act {
