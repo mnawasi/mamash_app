@@ -18,9 +18,6 @@ class _TransferMamashPageState extends State<TransferMamashPage> {
   static const Color _accentGreen = Color(0xFF1DBF8A);
 
   final List<Map<String, String>> _recentRecipients = [
-    {'name': 'Amina Yusuf', 'phone': '0803 221 4455', 'initials': 'AY'},
-    {'name': 'Chidi Okafor', 'phone': '0812 998 1234', 'initials': 'CO'},
-    {'name': 'Fatima Bello', 'phone': '0705 667 8899', 'initials': 'FB'},
   ];
 
   @override

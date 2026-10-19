@@ -44,6 +44,13 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Notifications: the owner can read them and mark them read. Only the server creates them.
+    match /users/{uid}/notifications/{nid} {
+      allow read: if isOwner(uid);
+      allow update: if isOwner(uid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow create, delete: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

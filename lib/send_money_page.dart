@@ -1,8 +1,10 @@
+import 'transfer_mamash_page.dart';
+import 'transfer_bank_page.dart';
+import 'scan_page.dart';
 import 'package:mamash_app/country_config.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'transfer_to_mamash_page.dart';
 import 'international_transfer_page.dart';
 
 class SendMoneyPage extends StatefulWidget {
@@ -259,7 +261,7 @@ class _SendMoneyPageState extends State<SendMoneyPage> {
 
   Widget _mamashUserRow() {
     return GestureDetector(
-      onTap: () => _goTo(const TransferToMamashPage()),
+      onTap: () => _goTo(const TransferMamashPage()),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -315,7 +317,7 @@ class _SendMoneyPageState extends State<SendMoneyPage> {
               icon: _mLogo(64, 32),
               title: 'Transfer to Mamash',
               sub: 'Send to another Mamash wallet',
-              onTap: () => _goTo(const TransferToMamashPage()),
+              onTap: () => _goTo(const TransferMamashPage()),
             ),
           ),
           const SizedBox(width: 10),
@@ -325,7 +327,7 @@ class _SendMoneyPageState extends State<SendMoneyPage> {
               icon: _iconBox(Icons.account_balance, _blue),
               title: 'To Bank',
               sub: 'Transfer to any Nigerian bank',
-              onTap: () => _soon('Bank transfer'),
+              onTap: () => _goTo(const TransferBankPage()),
             ),
           ),
           const SizedBox(width: 10),
@@ -335,7 +337,7 @@ class _SendMoneyPageState extends State<SendMoneyPage> {
               icon: _iconBox(Icons.qr_code_scanner, _purple),
               title: 'QR Payment',
               sub: 'Scan to pay a merchant or contact',
-              onTap: () => _soon('QR payment'),
+              onTap: () => _goTo(const ScanPage()),
             ),
           ),
         ],

@@ -91,6 +91,8 @@ class _DashboardPageState extends State<DashboardPage> {
     if (_firstName.isNotEmpty) return _firstName;
     final n = FirebaseAuth.instance.currentUser?.displayName?.trim() ?? '';
     if (n.isNotEmpty) return n.split(RegExp(r'\s+')).first;
+    final e = FirebaseAuth.instance.currentUser?.email ?? '';
+    if (e.contains('@')) return e.split('@').first;
     return 'there';
   }
 
