@@ -134,7 +134,7 @@ class _SendMoneyPageState extends State<SendMoneyPage> {
 
   // ---------- Balance ----------
   Widget _balanceCard() {
-    final second = _country.currencyCode == 'USD' ? CountryConfig.all[0] : CountryConfig.all[3];
+    final second = CountryConfig.secondaryFor(_country);
     final naira = _hidden ? '${_country.symbol} ****' : '${_country.symbol} ${_nairaBalance.toStringAsFixed(2)}';
     final dollar = _hidden ? '${second.symbol} ****' : '${second.symbol} ${_dollarBalance.toStringAsFixed(2)}';
     return Container(

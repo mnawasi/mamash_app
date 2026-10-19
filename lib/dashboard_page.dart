@@ -330,7 +330,7 @@ class _DashboardPageState extends State<DashboardPage> {
   // ---------- Balance card ----------
   Widget _balanceCard() {
     final naira = _balanceHidden ? '${_country.symbol} ****' : '${_country.symbol}${_nairaBalance.toStringAsFixed(2)}';
-    final second = _country.currencyCode == 'USD' ? CountryConfig.all[0] : CountryConfig.all[3];
+    final second = CountryConfig.secondaryFor(_country);
     final dollar = _balanceHidden ? '${second.symbol} ****' : '${second.symbol}${_dollarBalance.toStringAsFixed(2)}';
     return Container(
       padding: const EdgeInsets.all(14),

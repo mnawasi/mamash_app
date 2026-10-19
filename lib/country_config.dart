@@ -16,6 +16,17 @@ class CountryConfig {
     CountryConfig('England', '\u{1F1EC}\u{1F1E7}', '+44', 'GBP', 'Pound', '\u00a3'),
   ];
 
+  /// The second wallet shown next to the user's own currency.
+  /// Change this one place to change what each country sees.
+  static CountryConfig secondaryFor(CountryConfig c) {
+    switch (c.name) {
+      case 'USA':
+        return all[4]; // Pound (England's currency)
+      default:
+        return all[3]; // Dollar
+    }
+  }
+
   static CountryConfig fromName(String? name) {
     for (final c in all) {
       if (c.name == name) return c;
