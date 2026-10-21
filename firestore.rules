@@ -51,6 +51,12 @@ service cloud.firestore {
       allow create, delete: if false;
     }
 
+    // Recent recipients: the owner can read them. Only the server writes them.
+    match /users/{uid}/recentRecipients/{rid} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
