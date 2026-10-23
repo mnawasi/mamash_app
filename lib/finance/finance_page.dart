@@ -1,3 +1,6 @@
+import 'global_wallet_page.dart';
+import 'goals_page.dart';
+import 'feature_pages.dart';
 import 'package:flutter/material.dart';
 import '../wallet_page.dart';
 
@@ -81,10 +84,10 @@ class _FinancePageState extends State<FinancePage> {
   Widget build(BuildContext context) {
     final rows = [
       _Row(Icons.account_balance_wallet_outlined, 'Main Wallet', 'Daily spending & transfers', () => _goTo(const WalletPage())),
-      _Row(Icons.public, 'Global Wallet', 'Multi-currency \u2022 Worldwide', () => _msg('Global Wallet coming soon...')),
-      _Row(Icons.track_changes, 'Goals', 'Save for your dreams', () => _msg('Goals coming soon...')),
-      _Row(Icons.lock_outline, 'SafeBox', 'Extra security, higher rewards', () => _msg('SafeBox coming soon...')),
-      _Row(Icons.spa_outlined, 'Spend & Save', 'Save automatically', () => _msg('Spend & Save coming soon...')),
+      _Row(Icons.public, 'Global Wallet', 'Multi-currency \u2022 Worldwide', () => _goTo(const GlobalWalletPage())),
+      _Row(Icons.track_changes, 'Goals', 'Save for your dreams', () => _goTo(const GoalsPage())),
+      _Row(Icons.lock_outline, 'SafeBox', 'Extra security, higher rewards', () => _goTo(const SafeBoxPage())),
+      _Row(Icons.spa_outlined, 'Spend & Save', 'Save automatically', () => _goTo(const SpendSavePage())),
     ];
     final amounts = [_mainWallet, _globalWallet, _goals, _safeBox, _spendSave];
 
@@ -442,11 +445,11 @@ class _FinancePageState extends State<FinancePage> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        item(Icons.public, 'Global\nWallet', () => _msg('Global Wallet coming soon...')),
-        item(Icons.track_changes, 'Goals', () => _msg('Goals coming soon...')),
-        item(Icons.lock_outline, 'SafeBox', () => _msg('SafeBox coming soon...')),
-        item(Icons.bar_chart, 'Fixed\nSavings', () => _msg('Fixed Savings coming soon...')),
-        item(Icons.spa_outlined, 'Spend & Save', () => _msg('Spend & Save coming soon...')),
+        item(Icons.public, 'Global\nWallet', () => _goTo(const GlobalWalletPage())),
+        item(Icons.track_changes, 'Goals', () => _goTo(const GoalsPage())),
+        item(Icons.lock_outline, 'SafeBox', () => _goTo(const SafeBoxPage())),
+        item(Icons.bar_chart, 'Fixed\nSavings', () => _goTo(const FixedSavingsPage())),
+        item(Icons.spa_outlined, 'Spend & Save', () => _goTo(const SpendSavePage())),
       ],
     );
   }
@@ -510,7 +513,7 @@ class _FinancePageState extends State<FinancePage> {
                   style: TextStyle(color: Color(0xFFD0E8DE), fontSize: 12.5)),
               const Spacer(),
               GestureDetector(
-                onTap: () => _msg('Savings goals coming soon...'),
+                onTap: () => _goTo(const GoalsPage()),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(

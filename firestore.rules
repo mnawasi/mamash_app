@@ -57,6 +57,14 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Goals: the owner manages them, but the saved amount can only be changed by the server.
+    match /users/{uid}/goals/{gid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid) && request.resource.data.saved == 0;
+      allow update: if isOwner(uid) && request.resource.data.saved == resource.data.saved;
+      allow delete: if isOwner(uid) && resource.data.saved == 0;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
