@@ -229,7 +229,7 @@ class _SurveyPageState extends State<SurveyPage> {
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: selected ? _accentGreen.withOpacity(0.12) : const Color(0xFF262626),
+            color: selected ? _accentGreen.withValues(alpha: 0.12) : const Color(0xFF262626),
             borderRadius: BorderRadius.circular(10),
             border: selected ? Border.all(color: _accentGreen) : null,
           ),

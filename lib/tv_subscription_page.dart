@@ -191,7 +191,7 @@ class _TvSubscriptionPageState extends State<TvSubscriptionPage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: _accentGreen.withOpacity(0.12),
+                color: _accentGreen.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: _accentGreen),
               ),
@@ -289,7 +289,7 @@ class _TvSubscriptionPageState extends State<TvSubscriptionPage> {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: selected ? _accentGreen.withOpacity(0.12) : const Color(0xFF262626),
+          color: selected ? _accentGreen.withValues(alpha: 0.12) : const Color(0xFF262626),
           borderRadius: BorderRadius.circular(12),
           border: selected ? Border.all(color: _accentGreen) : null,
         ),

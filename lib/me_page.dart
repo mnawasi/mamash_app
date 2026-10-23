@@ -156,8 +156,8 @@ class _MePageState extends State<MePage> {
                 height: 64,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: _accentGreen.withOpacity(0.15),
-                  border: Border.all(color: _accentGreen.withOpacity(0.4), width: 2),
+                  color: _accentGreen.withValues(alpha: 0.15),
+                  border: Border.all(color: _accentGreen.withValues(alpha: 0.4), width: 2),
                 ),
                 child: const Icon(Icons.shield, color: _accentGreen, size: 28),
               ),
@@ -174,7 +174,7 @@ class _MePageState extends State<MePage> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [_accentGreen.withOpacity(0.9), _accentGreen.withOpacity(0.6)],
+          colors: [_accentGreen.withValues(alpha: 0.9), _accentGreen.withValues(alpha: 0.6)],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),

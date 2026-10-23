@@ -105,7 +105,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           width: 64,
           height: 64,
           decoration: BoxDecoration(
-            color: _accentGreen.withOpacity(0.15),
+            color: _accentGreen.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(18),
           ),
           child: const Icon(Icons.lock_reset, color: _accentGreen, size: 30),
@@ -176,7 +176,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           width: 64,
           height: 64,
           decoration: BoxDecoration(
-            color: _accentGreen.withOpacity(0.15),
+            color: _accentGreen.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(18),
           ),
           child: const Icon(Icons.mark_email_read_outlined, color: _accentGreen, size: 30),

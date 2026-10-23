@@ -206,7 +206,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: isCredit ? _accentGreen.withOpacity(0.15) : const Color(0xFF3A1212),
+              color: isCredit ? _accentGreen.withValues(alpha: 0.15) : const Color(0xFF3A1212),
               shape: BoxShape.circle,
             ),
             child: Icon(

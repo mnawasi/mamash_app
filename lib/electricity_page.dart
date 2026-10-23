@@ -297,7 +297,7 @@ class _ElectricityPageState extends State<ElectricityPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? _accentGreen.withOpacity(0.15) : const Color(0xFF262626),
+          color: selected ? _accentGreen.withValues(alpha: 0.15) : const Color(0xFF262626),
           borderRadius: BorderRadius.circular(10),
           border: selected ? Border.all(color: _accentGreen) : null,
         ),
