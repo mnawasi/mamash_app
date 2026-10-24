@@ -8,7 +8,7 @@ service cloud.firestore {
 
     function createClean(d) {
       return !d.keys().hasAny([
-          'verified', 'isVerified', 'kycVerified', 'kycStatus', 'tier3Status',
+          'verified', 'isVerified', 'kycVerified', 'kycStatus', 'tier3Status', 'wallets',
           'role', 'isAdmin', 'tier', 'dailyLimit', 'monthlyLimit', 'singleLimit'
         ])
         && zeroOrAbsent(d, 'balance') && zeroOrAbsent(d, 'nairaBalance')
@@ -19,7 +19,7 @@ service cloud.firestore {
     function updateClean() {
       let changed = request.resource.data.diff(resource.data).affectedKeys();
       return !changed.hasAny([
-          'balance', 'nairaBalance', 'dollarBalance', 'walletBalance',
+          'balance', 'nairaBalance', 'dollarBalance', 'walletBalance', 'wallets',
           'lockedBalance', 'inTransit', 'cashback', 'vouchers',
           'verified', 'isVerified', 'kycVerified', 'tier', 'role', 'isAdmin',
           'dailySpent', 'monthlySpent', 'dailyLimit', 'monthlyLimit', 'singleLimit',
@@ -63,6 +63,12 @@ service cloud.firestore {
       allow create: if isOwner(uid) && request.resource.data.saved == 0;
       allow update: if isOwner(uid) && request.resource.data.saved == resource.data.saved;
       allow delete: if isOwner(uid) && resource.data.saved == 0;
+    }
+
+    // Savings (SafeBox, Fixed Savings, Spend & Save): read-only for the owner. Only the server writes them.
+    match /users/{uid}/savings/{sid} {
+      allow read: if isOwner(uid);
+      allow write: if false;
     }
 
     match /{document=**} {

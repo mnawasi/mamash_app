@@ -1,6 +1,9 @@
 import 'global_wallet_page.dart';
 import 'goals_page.dart';
-import 'feature_pages.dart';
+import 'safebox_page.dart';
+import 'fixed_savings_page.dart';
+import 'spend_save_page.dart';
+import '../giftcards/gift_cards_page.dart';
 import 'package:flutter/material.dart';
 import '../wallet_page.dart';
 
@@ -119,6 +122,8 @@ class _FinancePageState extends State<FinancePage> {
                 _balanceList(rows, amounts),
                 const SizedBox(height: 16),
                 _shortcuts(),
+                const SizedBox(height: 16),
+                _giftTile(),
                 const SizedBox(height: 16),
                 _challenge(),
               ],
@@ -451,6 +456,44 @@ class _FinancePageState extends State<FinancePage> {
         item(Icons.bar_chart, 'Fixed\nSavings', () => _goTo(const FixedSavingsPage())),
         item(Icons.spa_outlined, 'Spend & Save', () => _goTo(const SpendSavePage())),
       ],
+    );
+  }
+
+  Widget _giftTile() {
+    return GestureDetector(
+      onTap: () => _goTo(const GiftCardsPage()),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(colors: [Color(0xFF7A1D4A), Color(0xFF4A1130), Color(0xFF2A0A1C)]),
+          border: Border.all(color: const Color(0xFFEC4899).withValues(alpha: 0.6)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(15),
+                gradient: const LinearGradient(colors: [Color(0xFFEC4899), Color(0xFF9D174D)]),
+              ),
+              child: const Icon(Icons.card_giftcard, color: Colors.white, size: 28),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Gift Cards', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800)),
+                  Text('Send, redeem and track gift cards', style: TextStyle(color: Color(0xFFF9C6DD), fontSize: 12.5)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.white70, size: 26),
+          ],
+        ),
+      ),
     );
   }
 

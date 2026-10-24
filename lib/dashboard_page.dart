@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:mamash_app/country_config.dart';
 import 'package:mamash_app/convert_page.dart';
 import 'package:mamash_app/main_shell.dart';
@@ -29,8 +30,8 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  static const double _nairaBalance = 0.00;
-  static const double _dollarBalance = 0.00;
+  double _nairaBalance = 0.00;
+  double _dollarBalance = 0.00;
   static const int _unreadNotifications = 0;
 
   bool _balanceHidden = false;
@@ -52,6 +53,7 @@ class _DashboardPageState extends State<DashboardPage> {
   void initState() {
     super.initState();
     _loadAccountNumbers().then((_) => _checkCountry());
+    _listenWallets();
   }
 
   Future<void> _loadAccountNumbers() async {
@@ -152,6 +154,31 @@ class _DashboardPageState extends State<DashboardPage> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not save your country: $e')));
       }
     }
+  }
+
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _walletSub;
+
+  void _listenWallets() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    _walletSub = FirebaseFirestore.instance.collection('users').doc(uid).snapshots().listen((doc) {
+      if (!mounted) return;
+      final data = doc.data();
+      final c = CountryConfig.fromName(data?['country'] as String?);
+      final w = data?['wallets'];
+      double read(String code) => (w is Map && w[code] is num) ? (w[code] as num).toDouble() : 0;
+      setState(() {
+        _country = c;
+        _nairaBalance = read(c.currencyCode);
+        _dollarBalance = read(CountryConfig.secondaryFor(c).currencyCode);
+      });
+    }, onError: (_) {});
+  }
+
+  @override
+  void dispose() {
+    _walletSub?.cancel();
+    super.dispose();
   }
 
   void _goTo(Widget page) {

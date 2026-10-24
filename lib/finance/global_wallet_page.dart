@@ -4,6 +4,7 @@ import '../add_money_page.dart';
 import '../convert_page.dart';
 import '../international_transfer_page.dart';
 import 'finance_common.dart';
+import 'savings_common.dart';
 
 class GlobalWalletPage extends StatefulWidget {
   const GlobalWalletPage({super.key});
@@ -13,9 +14,7 @@ class GlobalWalletPage extends StatefulWidget {
 }
 
 class _GlobalWalletPageState extends State<GlobalWalletPage> {
-  // Placeholder balances. Connect these to your real wallet data.
-  static const double _balance = 0.00;
-
+  final _wallets = walletStream();
   CountryConfig _country = CountryConfig.all.first;
   bool _hidden = false;
 
@@ -33,49 +32,46 @@ class _GlobalWalletPageState extends State<GlobalWalletPage> {
   Widget build(BuildContext context) {
     final mine = _country;
     final second = CountryConfig.secondaryFor(mine);
-    final others = CountryConfig.all.where((c) => c.currencyCode != mine.currencyCode && c.currencyCode != second.currencyCode).toList();
+    final order = <CountryConfig>[
+      mine,
+      second,
+      ...CountryConfig.all.where((c) => c.currencyCode != mine.currencyCode && c.currencyCode != second.currencyCode),
+    ];
+    const palettes = [
+      [Color(0xFF0E7A57), Color(0xFF0A4A38)],
+      [Color(0xFF123A7A), Color(0xFF0A2250)],
+      [Color(0xFF5B21B6), Color(0xFF2E1065)],
+      [Color(0xFF9A3412), Color(0xFF431407)],
+      [Color(0xFF0F766E), Color(0xFF042F2E)],
+    ];
     return FinScaffold(
       title: 'Global Wallet',
       subtitle: 'Hold and move money in many currencies',
       children: [
-        _walletCard(mine, const [Color(0xFF0E7A57), Color(0xFF0A4A38)]),
-        _walletCard(second, const [Color(0xFF123A7A), Color(0xFF0A2250)]),
-        const SizedBox(height: 4),
-        const Text('More currencies', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800)),
-        const SizedBox(height: 10),
-        ...others.map((c) => FinPanel(
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                children: [
-                  Text(c.flag, style: const TextStyle(fontSize: 30)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('${c.currencyName} wallet', style: const TextStyle(color: Colors.white, fontSize: 15.5, fontWeight: FontWeight.w700)),
-                        Text(c.currencyCode, style: const TextStyle(color: Color(0xFFB5D4D0), fontSize: 12.5)),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF3A2E0A),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFE8B83D)),
-                    ),
-                    child: const Text('Coming soon', style: TextStyle(color: Color(0xFFFFD66B), fontSize: 11.5, fontWeight: FontWeight.w700)),
-                  ),
-                ],
-              ),
-            )),
+        StreamBuilder<Map<String, double>>(
+          stream: _wallets,
+          builder: (context, snap) {
+            final w = snap.data ?? <String, double>{};
+            return Column(
+              children: [
+                for (int i = 0; i < order.length; i++) _walletCard(order[i], w[order[i].currencyCode] ?? 0, palettes[i % palettes.length]),
+              ],
+            );
+          },
+        ),
+        const Padding(
+          padding: EdgeInsets.only(top: 2),
+          child: Text(
+            'Adding money and converting work once your payment provider is connected.',
+            style: TextStyle(color: Color(0xFF8FB3B0), fontSize: 12.5, height: 1.4),
+          ),
+        ),
       ],
     );
   }
 
-  Widget _walletCard(CountryConfig c, List<Color> colors) {
-    final amount = _hidden ? '${c.symbol} ****' : '${c.symbol} ${money(_balance)}';
+  Widget _walletCard(CountryConfig c, double balance, List<Color> colors) {
+    final amount = _hidden ? '${c.symbol} ****' : '${c.symbol} ${money(balance)}';
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 14),
@@ -83,7 +79,7 @@ class _GlobalWalletPageState extends State<GlobalWalletPage> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
         gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: colors),
-        border: Border.all(color: FT.green.withValues(alpha: 0.4)),
+        border: Border.all(color: FT.green.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,7 +102,7 @@ class _GlobalWalletPageState extends State<GlobalWalletPage> {
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
-            child: Text(amount, style: const TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w800)),
+            child: Text(amount, style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w800)),
           ),
           const SizedBox(height: 14),
           Row(
@@ -128,18 +124,18 @@ class _GlobalWalletPageState extends State<GlobalWalletPage> {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          height: 46,
+          height: 44,
           decoration: BoxDecoration(
             color: Colors.black.withValues(alpha: 0.25),
-            borderRadius: BorderRadius.circular(23),
+            borderRadius: BorderRadius.circular(22),
             border: Border.all(color: Colors.white24),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: Colors.white, size: 18),
+              Icon(icon, color: Colors.white, size: 17),
               const SizedBox(width: 6),
-              Text(label, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+              Text(label, style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700)),
             ],
           ),
         ),
