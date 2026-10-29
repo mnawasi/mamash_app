@@ -75,7 +75,6 @@ flutter:
 
   assets:
     - assets/images/mamash_logo.png
-    - assets/images/splash_screen.jpg
     - assets/icons/send_money_icon.png
 
   # To add assets to your application, add an assets section, like this:
