@@ -195,57 +195,56 @@ class _BettingPageState extends State<BettingPage> {
 
   Widget _banner() {
     return Container(
-      height: 160,
-      padding: const EdgeInsets.all(16),
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         gradient: const LinearGradient(colors: [Color(0xFF0B2A1A), Color(0xFF0A1710), Color(0xFF123A1E)]),
         border: Border.all(color: _green.withValues(alpha: 0.6), width: 1.2),
         boxShadow: [BoxShadow(color: _green.withValues(alpha: 0.2), blurRadius: 16)],
       ),
-      child: Stack(
+      child: Row(
         children: [
-          Positioned(
-            right: 0,
-            bottom: 0,
-            child: Row(
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.sports_soccer, size: 72, color: Colors.white.withValues(alpha: 0.9)),
-                Icon(Icons.sports_basketball, size: 52, color: const Color(0xFFFF8A3D).withValues(alpha: 0.95)),
+                const Text('Bet on Top Leagues',
+                    style: TextStyle(color: Colors.white, fontSize: 21, fontWeight: FontWeight.w800, height: 1.15)),
+                const SizedBox(height: 6),
+                const Text('Football \u2022 Basketball \u2022 Tennis \u2022 eSports',
+                    style: TextStyle(color: Color(0xFFD0DDD5), fontSize: 11.5, height: 1.3)),
+                const SizedBox(height: 14),
+                GestureDetector(
+                  onTap: () => _msg('Events coming soon...'),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(color: _green, borderRadius: BorderRadius.circular(22)),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('Explore Events', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w800)),
+                        SizedBox(width: 6),
+                        Icon(Icons.arrow_forward, color: Colors.black, size: 18),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
-          Positioned(
-            right: 20,
-            top: 0,
-            child: Icon(Icons.emoji_events, size: 64, color: const Color(0xFFFFC83D).withValues(alpha: 0.95)),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text('Bet on Top Leagues',
-                  style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 4),
-              const Text('Football \u2022 Basketball \u2022 Tennis \u2022 eSports',
-                  style: TextStyle(color: Color(0xFFD0DDD5), fontSize: 11.5)),
-              const SizedBox(height: 14),
-              GestureDetector(
-                onTap: () => _msg('Events coming soon...'),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  decoration: BoxDecoration(color: _green, borderRadius: BorderRadius.circular(22)),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('Explore Events', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w800)),
-                      SizedBox(width: 6),
-                      Icon(Icons.arrow_forward, color: Colors.black, size: 18),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+          const SizedBox(width: 6),
+          SizedBox(
+            width: 100,
+            height: 130,
+            child: Stack(
+              children: [
+                Positioned(top: 0, left: 20, child: Icon(Icons.emoji_events, size: 62, color: const Color(0xFFFFC83D).withValues(alpha: 0.95))),
+                Positioned(bottom: 6, left: 0, child: Icon(Icons.sports_soccer, size: 46, color: Colors.white.withValues(alpha: 0.92))),
+                Positioned(bottom: 10, right: 0, child: Icon(Icons.sports_basketball, size: 42, color: const Color(0xFFFF8A3D).withValues(alpha: 0.95))),
+              ],
+            ),
           ),
         ],
       ),
@@ -393,7 +392,11 @@ class _BettingPageState extends State<BettingPage> {
                   decoration: const InputDecoration(
                     isDense: true,
                     contentPadding: EdgeInsets.only(top: 2),
+                    filled: true,
+                    fillColor: Colors.transparent,
                     border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
                     hintText: 'Enter your user ID',
                     hintStyle: TextStyle(color: Colors.white30, fontSize: 16, fontWeight: FontWeight.w500),
                   ),
@@ -534,7 +537,11 @@ class _BettingPageState extends State<BettingPage> {
                     onChanged: (_) => setState(() {}),
                     style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
                     decoration: const InputDecoration(
-                      border: InputBorder.none,
+                      filled: true,
+                    fillColor: Colors.transparent,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
                       hintText: '100 - 1,000,000',
                       hintStyle: TextStyle(color: Colors.white30, fontSize: 18, fontWeight: FontWeight.w500),
                     ),

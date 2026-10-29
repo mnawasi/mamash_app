@@ -608,104 +608,99 @@ class _WalletPageState extends State<WalletPage> {
   // ---------- Banner ----------
   Widget _banner() {
     return Container(
-      height: 118,
-      padding: const EdgeInsets.all(14),
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         gradient: const LinearGradient(colors: [Color(0xFF0A2A3A), Color(0xFF0A2238), Color(0xFF0B3A4A)]),
         border: Border.all(color: _green.withValues(alpha: 0.45)),
       ),
-      child: Stack(
+      child: Row(
         children: [
-          Positioned(
-            right: 6,
-            top: -4,
-            bottom: -4,
-            child: SizedBox(
-              width: 130,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Container(
-                    width: 62,
-                    height: 100,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(11),
+                        color: _green.withValues(alpha: 0.15),
+                        border: Border.all(color: _green.withValues(alpha: 0.6)),
+                      ),
+                      child: const Icon(Icons.bolt, color: _green, size: 24),
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text('Super Fast. Super Secure.',
+                          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800, height: 1.15)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text('Enjoy instant transfers, low fees and global access.',
+                    style: TextStyle(color: Color(0xFFC6DAD6), fontSize: 11.5, height: 1.3)),
+                const SizedBox(height: 12),
+                GestureDetector(
+                  onTap: () => _msg('Features coming soon...'),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      gradient: const LinearGradient(colors: [Color(0xFF123A5E), Color(0xFF0A1B2E)]),
-                      border: Border.all(color: _green, width: 1.4),
-                      boxShadow: [BoxShadow(color: _green.withValues(alpha: 0.5), blurRadius: 14)],
+                      color: _green,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [BoxShadow(color: _green.withValues(alpha: 0.4), blurRadius: 10)],
                     ),
-                    child: const Center(
-                      child: Text('M',
-                          style: TextStyle(color: _green, fontSize: 34, fontWeight: FontWeight.w900, fontStyle: FontStyle.italic)),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('Explore Features', style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.w800)),
+                        SizedBox(width: 4),
+                        Icon(Icons.chevron_right, color: Colors.black, size: 18),
+                      ],
                     ),
-                  ),
-                  const Positioned(left: 0, top: 6, child: Text(_usFlag, style: TextStyle(fontSize: 24))),
-                  const Positioned(right: 0, top: 4, child: Text(_ngFlag, style: TextStyle(fontSize: 22))),
-                  const Positioned(
-                    left: 6,
-                    bottom: 8,
-                    child: CircleAvatar(radius: 15, backgroundColor: Color(0xFFFFB02E), child: Text('\$', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 17))),
-                  ),
-                  const Positioned(
-                    right: 2,
-                    bottom: 4,
-                    child: CircleAvatar(radius: 15, backgroundColor: Color(0xFFFFB02E), child: Text('\u20a6', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 17))),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(11),
-                      color: _green.withValues(alpha: 0.15),
-                      border: Border.all(color: _green.withValues(alpha: 0.6)),
-                    ),
-                    child: const Icon(Icons.bolt, color: _green, size: 24),
-                  ),
-                  const SizedBox(width: 10),
-                  const Flexible(
-                    child: Text('Super Fast. Super Secure.',
-                        style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800)),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              const SizedBox(
-                width: 210,
-                child: Text('Enjoy instant transfers, low fees and global access.',
-                    style: TextStyle(color: Color(0xFFC6DAD6), fontSize: 10.5)),
-              ),
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: () => _msg('Features coming soon...'),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: _green,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [BoxShadow(color: _green.withValues(alpha: 0.4), blurRadius: 10)],
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('Explore Features', style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.w800)),
-                      SizedBox(width: 6),
-                      Icon(Icons.chevron_right, color: Colors.black, size: 18),
-                    ],
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 104,
+            height: 124,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  width: 58,
+                  height: 96,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    gradient: const LinearGradient(colors: [Color(0xFF123A5E), Color(0xFF0A1B2E)]),
+                    border: Border.all(color: _green, width: 1.4),
+                    boxShadow: [BoxShadow(color: _green.withValues(alpha: 0.45), blurRadius: 12)],
+                  ),
+                  child: const Center(
+                    child: Text('M', style: TextStyle(color: _green, fontSize: 32, fontWeight: FontWeight.w900, fontStyle: FontStyle.italic)),
+                  ),
+                ),
+                const Positioned(left: 0, top: 2, child: Text(_usFlag, style: TextStyle(fontSize: 22))),
+                const Positioned(right: 0, top: 0, child: Text(_ngFlag, style: TextStyle(fontSize: 22))),
+                const Positioned(
+                  left: 2,
+                  bottom: 2,
+                  child: CircleAvatar(radius: 13, backgroundColor: Color(0xFFFFB02E), child: Text('\$', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 15))),
+                ),
+                const Positioned(
+                  right: 0,
+                  bottom: 6,
+                  child: CircleAvatar(radius: 13, backgroundColor: Color(0xFFFFB02E), child: Text('\u20a6', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 15))),
+                ),
+              ],
+            ),
           ),
         ],
       ),

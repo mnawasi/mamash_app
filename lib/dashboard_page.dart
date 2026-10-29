@@ -169,6 +169,7 @@ class _DashboardPageState extends State<DashboardPage> {
       double read(String code) => (w is Map && w[code] is num) ? (w[code] as num).toDouble() : 0;
       setState(() {
         _country = c;
+        _firstName = _pickFirstName(data);
         _nairaBalance = read(c.currencyCode);
         _dollarBalance = read(CountryConfig.secondaryFor(c).currencyCode);
       });

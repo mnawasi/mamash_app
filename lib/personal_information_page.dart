@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'country_config.dart';
 
 class PersonalInformationPage extends StatefulWidget {
   const PersonalInformationPage({super.key});
@@ -16,12 +18,14 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
   static const Color _line = Color(0xFF1B2A44);
 
   final _name = TextEditingController();
+  final _phone = TextEditingController();
   final _address = TextEditingController();
   String _gender = '';
   String _email = '';
-  String _phone = '';
+  CountryConfig _country = CountryConfig.all.first;
   bool _loading = true;
   bool _saving = false;
+  String _error = '';
 
   @override
   void initState() {
@@ -32,12 +36,9 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
   @override
   void dispose() {
     _name.dispose();
+    _phone.dispose();
     _address.dispose();
     super.dispose();
-  }
-
-  void _msg(String t) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t)));
   }
 
   Future<void> _load() async {
@@ -51,6 +52,7 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
     String phone = user.phoneNumber ?? '';
     String gender = '';
     String address = '';
+    CountryConfig country = CountryConfig.all.first;
     try {
       final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
       final d = doc.data();
@@ -71,37 +73,59 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
         if (p.isNotEmpty) phone = p;
         gender = pick(['gender']);
         address = pick(['address']);
+        country = CountryConfig.fromName(d['country'] as String?);
       }
-    } catch (_) {}
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Could not load your details: $e');
+    }
+    // Show the phone number without the country code.
+    String local = phone.replaceAll(RegExp(r'[^0-9+]'), '');
+    if (local.startsWith(country.dial)) {
+      local = local.substring(country.dial.length);
+    }
+    local = local.replaceAll('+', '').replaceFirst(RegExp(r'^0+'), '');
     if (!mounted) return;
     setState(() {
       _name.text = name;
+      _phone.text = local;
       _address.text = address;
       _gender = gender;
       _email = email;
-      _phone = phone;
+      _country = country;
       _loading = false;
     });
   }
 
   Future<void> _save() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return _msg('Please log in again');
+    if (user == null) return setState(() => _error = 'Please log in again');
     final name = _name.text.trim();
-    if (name.length < 2) return _msg('Enter your full name');
-    setState(() => _saving = true);
+    final digits = _phone.text.replaceAll(RegExp(r'[^0-9]'), '').replaceFirst(RegExp(r'^0+'), '');
+    if (name.length < 2) return setState(() => _error = 'Enter your full name');
+    if (digits.isNotEmpty && (digits.length < 7 || digits.length > 11)) {
+      return setState(() => _error = 'Enter a valid phone number');
+    }
+    setState(() {
+      _saving = true;
+      _error = '';
+    });
     try {
+      final full = digits.isEmpty ? null : '${_country.dial}$digits';
       await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
         'fullName': name,
+        'name': name,
         'gender': _gender,
         'address': _address.text.trim(),
+        if (full != null) ...{'phone': full, 'phoneNumber': full},
       }, SetOptions(merge: true));
-      await user.updateDisplayName(name);
+      try {
+        await user.updateDisplayName(name);
+      } catch (_) {}
       if (!mounted) return;
-      _msg('Personal information saved');
-      Navigator.pop(context);
-    } catch (_) {
-      _msg('Could not save. Check your connection and try again.');
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Personal information saved')));
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Could not save: $e');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -112,15 +136,17 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
       context: context,
       backgroundColor: _panel,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => ListView(
-        shrinkWrap: true,
-        children: ['Male', 'Female', 'Prefer not to say']
-            .map((g) => ListTile(
-                  title: Text(g, style: const TextStyle(color: Colors.white)),
-                  trailing: g == _gender ? const Icon(Icons.check, color: _gold) : null,
-                  onTap: () => Navigator.pop(context, g),
-                ))
-            .toList(),
+      builder: (_) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: ['Male', 'Female', 'Prefer not to say']
+              .map((g) => ListTile(
+                    title: Text(g, style: const TextStyle(color: Colors.white)),
+                    trailing: g == _gender ? const Icon(Icons.check, color: _gold) : null,
+                    onTap: () => Navigator.pop(context, g),
+                  ))
+              .toList(),
+        ),
       ),
     );
     if (g != null) setState(() => _gender = g);
@@ -140,45 +166,102 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: _gold))
           : SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _label('Full name'),
-                  _input(_name, Icons.person_outline, 'Enter your full name'),
+                  _box(TextField(
+                    controller: _name,
+                    textCapitalization: TextCapitalization.words,
+                    cursorColor: _gold,
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                    decoration: _dec('Enter your full name'),
+                  ), Icons.person_outline),
                   _label('Email'),
-                  _readOnly(Icons.mail_outline, _email.isEmpty ? 'Not set' : _email),
-                  _label('Phone number'),
-                  _readOnly(Icons.phone_outlined, _phone.isEmpty ? 'Not set' : _phone),
+                  Container(
+                    height: 56,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF070D18),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: _line),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.mail_outline, color: Color(0xFF6B7A9A), size: 22),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(_email.isEmpty ? 'Not set' : _email,
+                              style: const TextStyle(color: Color(0xFF9FB0D0), fontSize: 16)),
+                        ),
+                        const Icon(Icons.lock_outline, color: Color(0xFF6B7A9A), size: 18),
+                      ],
+                    ),
+                  ),
                   const Padding(
                     padding: EdgeInsets.only(top: 6),
-                    child: Text('Email and phone can\'t be changed here. Contact support to update them.',
-                        style: TextStyle(color: Color(0xFF8FA3C8), fontSize: 12)),
+                    child: Text('Your email can\'t be changed here.', style: TextStyle(color: Color(0xFF8FA3C8), fontSize: 12)),
+                  ),
+                  _label('Phone number'),
+                  _box(
+                    Row(
+                      children: [
+                        Text('${_country.flag} ${_country.dial}',
+                            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                        const SizedBox(width: 10),
+                        Container(width: 1, height: 24, color: Colors.white24),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextField(
+                            controller: _phone,
+                            keyboardType: TextInputType.phone,
+                            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9 ]'))],
+                            cursorColor: _gold,
+                            style: const TextStyle(color: Colors.white, fontSize: 16),
+                            decoration: _dec('Phone number'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Icons.phone_outlined,
                   ),
                   _label('Gender'),
                   GestureDetector(
                     onTap: _pickGender,
-                    child: Container(
-                      height: 56,
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      decoration: _box(),
-                      child: Row(
+                    child: _box(
+                      Row(
                         children: [
-                          const Icon(Icons.wc, color: Color(0xFF9FB0D0), size: 22),
-                          const SizedBox(width: 12),
                           Expanded(
                             child: Text(_gender.isEmpty ? 'Select gender' : _gender,
-                                style: TextStyle(
-                                    color: _gender.isEmpty ? const Color(0xFF7D8DB0) : Colors.white, fontSize: 16)),
+                                style: TextStyle(color: _gender.isEmpty ? const Color(0xFF7D8DB0) : Colors.white, fontSize: 16)),
                           ),
                           const Icon(Icons.keyboard_arrow_down, color: Colors.white70),
                         ],
                       ),
+                      Icons.wc,
                     ),
                   ),
                   _label('Address'),
-                  _input(_address, Icons.home_outlined, 'House number, street, city, state', lines: 3),
-                  const SizedBox(height: 26),
+                  _box(
+                    TextField(
+                      controller: _address,
+                      minLines: 3,
+                      maxLines: 3,
+                      textCapitalization: TextCapitalization.sentences,
+                      cursorColor: _gold,
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                      decoration: _dec('House number, street, city, state'),
+                    ),
+                    Icons.home_outlined,
+                    tall: true,
+                  ),
+                  if (_error.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 14),
+                      child: Text(_error, style: const TextStyle(color: Color(0xFFFF5A67), fontSize: 13.5, height: 1.4)),
+                    ),
+                  const SizedBox(height: 22),
                   GestureDetector(
                     onTap: _saving ? null : _save,
                     child: Container(
@@ -205,60 +288,42 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
     );
   }
 
-  BoxDecoration _box() => BoxDecoration(
-        color: _panel,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _line),
-      );
-
   Widget _label(String t) => Padding(
         padding: const EdgeInsets.only(top: 18, bottom: 8),
         child: Text(t, style: const TextStyle(color: Color(0xFFB5C6E8), fontSize: 14, fontWeight: FontWeight.w600)),
       );
 
-  Widget _input(TextEditingController c, IconData icon, String hint, {int lines = 1}) {
+  Widget _box(Widget child, IconData icon, {bool tall = false}) {
     return Container(
+      constraints: BoxConstraints(minHeight: tall ? 96 : 56),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-      decoration: _box(),
+      decoration: BoxDecoration(
+        color: _panel,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _line),
+      ),
       child: Row(
-        crossAxisAlignment: lines > 1 ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+        crossAxisAlignment: tall ? CrossAxisAlignment.start : CrossAxisAlignment.center,
         children: [
           Padding(
-            padding: EdgeInsets.only(top: lines > 1 ? 14 : 0),
+            padding: EdgeInsets.only(top: tall ? 14 : 0),
             child: Icon(icon, color: const Color(0xFF9FB0D0), size: 22),
           ),
           const SizedBox(width: 12),
-          Expanded(
-            child: TextField(
-              controller: c,
-              minLines: lines,
-              maxLines: lines,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText: hint,
-                hintStyle: const TextStyle(color: Color(0xFF7D8DB0), fontSize: 16),
-              ),
-            ),
-          ),
+          Expanded(child: child),
         ],
       ),
     );
   }
 
-  Widget _readOnly(IconData icon, String value) {
-    return Container(
-      height: 56,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: _box().copyWith(color: const Color(0xFF070D18)),
-      child: Row(
-        children: [
-          Icon(icon, color: const Color(0xFF6B7A9A), size: 22),
-          const SizedBox(width: 12),
-          Expanded(child: Text(value, style: const TextStyle(color: Color(0xFF9FB0D0), fontSize: 16))),
-          const Icon(Icons.lock_outline, color: Color(0xFF6B7A9A), size: 18),
-        ],
-      ),
-    );
-  }
+  InputDecoration _dec(String hint) => InputDecoration(
+        filled: true,
+        fillColor: Colors.transparent,
+        isDense: true,
+        border: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        focusedBorder: InputBorder.none,
+        hintText: hint,
+        hintStyle: const TextStyle(color: Color(0xFF7D8DB0), fontSize: 16),
+      );
 }

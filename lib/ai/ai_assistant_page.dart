@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:firebase_ai/firebase_ai.dart';
+import '../country_config.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -20,7 +24,6 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
   static const String _welcome =
       'Hi! I\'m Mamash AI. Ask me about your transactions, bill payments, or how to use any feature in the app.';
 
-  static const Color _navy = Color(0xFF0A2A8A);
   static const Color _blue = Color(0xFF1D6BFF);
   static const Color _ink = Color(0xFF1A2A4A);
 
@@ -62,6 +65,7 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
   }
 
   void _clear() {
+    _chat = null;
     setState(() {
       _messages
         ..clear()
@@ -92,7 +96,135 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
 
   // Built-in answers. To connect a real AI model later, call it here from a secure backend
   // and return its answer. Don't put an AI API key inside the app.
+  // ---------- AI (Gemini through Firebase AI Logic) ----------
+  static const String _systemPrompt = r"""
+You are Mamash AI, the in-app assistant for Mamash Pay, a digital wallet app. Answer briefly and clearly in simple English, in under 120 words.
+
+You can explain how to use the app: sending money (Transfer to Mamash, To Bank, QR payment), International Transfer, Airtime, Data, Bills, Betting wallet funding, Gift Cards, Rewards and Refer & Earn, the Wallet, Finance (Goals, SafeBox, Fixed Savings, Spend & Save) and the Me tab (Personal Information, Verification & KYC, Transaction Limits and tiers, Security, Help & Support).
+Transaction tiers for naira accounts: Tier 1 up to 500,000 naira per day, Tier 2 up to 5,000,000, Tier 3 up to 30,000,000. Users upgrade under Me > Transaction Limits.
+
+Some features are still being rolled out, for example bank transfers, flights, gift cards and savings may not be available yet. If asked whether something works, say it may not be available yet and to check the app.
+
+Rules you must always follow:
+- Never ask for or accept passwords, PINs, OTPs, card numbers or BVN. Warn users never to share them with anyone.
+- You cannot see balances or transactions, move money, or change settings. Tell users where to do it in the app.
+- Never invent transaction details, rates, fees or interest. Never promise returns.
+- For account problems or disputes, point users to mamashpay0@gmail.com or +234 813 747 9520.
+- Do not give legal, tax or investment advice.
+- If you do not know, say so. Politely decline requests that are not about Mamash Pay or everyday money help.
+""";
+
+  // ---------- Your Val Town backend ----------
+  static const String _backendUrl = 'https://muhammadnawasi--683d6c0aa3f211f19a96160.web.val.run';
+  static const bool _useValTown = true; // set to false to use Firebase AI Logic instead
+
+  Future<String?> _askValTown(String input) async {
+    try {
+      final history = _messages.length > 12 ? _messages.sublist(_messages.length - 12) : List<_Msg>.of(_messages);
+      String? token;
+      try {
+        token = await FirebaseAuth.instance.currentUser?.getIdToken();
+      } catch (_) {}
+      final res = await http
+          .post(
+            Uri.parse(_backendUrl),
+            headers: {
+              'Content-Type': 'application/json',
+              if (token != null) 'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode({
+              'messages': history.map((m) => {'role': m.fromUser ? 'user' : 'assistant', 'content': m.text}).toList(),
+              'message': input,
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
+      if (res.statusCode != 200) {
+        debugPrint('AI backend status ${res.statusCode}: ${res.body}');
+        return null;
+      }
+      String? out;
+      try {
+        final j = jsonDecode(res.body);
+        if (j is Map) {
+          for (final k in ['reply', 'response', 'text', 'message', 'content', 'output', 'answer']) {
+            final v = j[k];
+            if (v is String && v.trim().isNotEmpty) {
+              out = v.trim();
+              break;
+            }
+          }
+        } else if (j is String) {
+          out = j.trim();
+        }
+      } catch (_) {
+        out = res.body.trim();
+      }
+      return (out == null || out.isEmpty) ? null : out;
+    } catch (e) {
+      debugPrint('AI backend error: $e');
+      return null;
+    }
+  }
+
+  ChatSession? _chat;
+  int _aiFails = 0;
+  String _ctx = '';
+
+  Future<void> _loadContext() async {
+    if (_ctx.isNotEmpty) return;
+    String line = 'The user is in Nigeria and their wallet currency is NGN.';
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        final d = (await FirebaseFirestore.instance.collection('users').doc(uid).get()).data();
+        final name = d?['country'];
+        final c = CountryConfig.fromName(name is String ? name : null);
+        line = 'The user is in ${c.name} and their wallet currency is ${c.currencyCode}.';
+      }
+    } catch (_) {}
+    _ctx = line;
+  }
+
+  Future<String?> _askAi(String input) async {
+    if (_aiFails >= 2) return null;
+    try {
+      await _loadContext();
+      _chat ??= FirebaseAI.googleAI()
+          .generativeModel(
+            model: 'gemini-2.5-flash',
+            systemInstruction: Content.system('$_systemPrompt\n$_ctx'),
+            generationConfig: GenerationConfig(maxOutputTokens: 400, temperature: 0.4),
+          )
+          .startChat();
+      final text = input.length > 500 ? input.substring(0, 500) : input;
+      final res = await _chat!.sendMessage(Content.text(text)).timeout(const Duration(seconds: 25));
+      final out = res.text?.trim();
+      if (out == null || out.isEmpty) {
+        _aiFails++;
+        return null;
+      }
+      _aiFails = 0;
+      return out;
+    } catch (e) {
+      debugPrint('AI error: $e');
+      _aiFails++;
+      return null;
+    }
+  }
+
   Future<String> _reply(String input) async {
+    final t = input.toLowerCase();
+    final personal = t.contains('account number') || t.contains('account no') || t.contains('my account');
+    if (!personal) {
+      final ai = _useValTown ? await _askValTown(input) : await _askAi(input);
+      if (ai != null) return ai;
+      final basic = await _localReply(input);
+      return '$basic\n\n(Live AI is unavailable right now, so this is a basic answer.)';
+    }
+    return _localReply(input);
+  }
+
+  Future<String> _localReply(String input) async {
     final t = input.toLowerCase();
     bool has(List<String> words) => words.any(t.contains);
 
@@ -506,7 +638,7 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
                   children: [
                     Icon(Icons.verified_user, color: Color(0xFF3DE0B0), size: 18),
                     SizedBox(width: 6),
-                    Text('Secure & Private',
+                    Text('Never share your PIN',
                         style: TextStyle(color: Color(0xFF3DE0B0), fontSize: 12.5, fontWeight: FontWeight.w700)),
                   ],
                 ),
