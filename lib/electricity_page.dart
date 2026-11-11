@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'country_config.dart';
 
 class ElectricityPage extends StatefulWidget {
   const ElectricityPage({super.key});
@@ -179,7 +180,7 @@ class _ElectricityPageState extends State<ElectricityPage> {
                     color: const Color(0xFF262626),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Text('₦$amount', style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                  child: Text('${CountryConfig.current.symbol}$amount', style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
                 ),
               );
             },
@@ -195,7 +196,7 @@ class _ElectricityPageState extends State<ElectricityPage> {
                   ),
                   child: Row(
                     children: [
-                      const Text('₦', style: TextStyle(color: Colors.white54, fontSize: 15)),
+                      Text('${CountryConfig.current.symbol}', style: TextStyle(color: Colors.white54, fontSize: 15)),
                       const SizedBox(width: 6),
                       Expanded(
                         child: TextField(

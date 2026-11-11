@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'verification_kyc_page.dart';
 import 'tier3_verification_page.dart';
+import 'country_config.dart';
 
 class TransactionLimitsPage extends StatefulWidget {
   const TransactionLimitsPage({super.key});
@@ -22,10 +23,10 @@ class _Tier {
 class _TransactionLimitsPageState extends State<TransactionLimitsPage> {
   // Daily sending limit for each tier. These are only DISPLAYED here.
   // Your server must enforce them on every transfer.
-  static const _tiers = [
-    _Tier(1, 500000, 'Basic account', Color(0xFFFFC83D)),
-    _Tier(2, 5000000, 'Verify your identity (BVN and ID)', Color(0xFF3B82F6)),
-    _Tier(3, 30000000, 'Upload a NEPA (electricity) bill as proof of address', Color(0xFF22C55E)),
+  static List<_Tier> get _tiers => [
+    _Tier(1, CountryConfig.current.tierLimits[0].toDouble(), 'Basic account', Color(0xFFFFC83D)),
+    _Tier(2, CountryConfig.current.tierLimits[1].toDouble(), (CountryConfig.current.name == 'Nigeria' ? 'Verify your identity (BVN and ID)' : 'Verify your identity (government ID)'), Color(0xFF3B82F6)),
+    _Tier(3, CountryConfig.current.tierLimits[2].toDouble(), (CountryConfig.current.name == 'Nigeria' ? 'Upload a NEPA (electricity) bill as proof of address' : 'Upload a utility bill as proof of address'), Color(0xFF22C55E)),
   ];
 
   static const Color _bg = Color(0xFF050A12);
@@ -84,7 +85,7 @@ class _TransactionLimitsPageState extends State<TransactionLimitsPage> {
       if (i > 0 && (s.length - i) % 3 == 0) b.write(',');
       b.write(s[i]);
     }
-    return '\u20a6$b';
+    return '${CountryConfig.current.symbol}$b';
   }
 
   void _increase() {

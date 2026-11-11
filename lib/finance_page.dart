@@ -6,6 +6,7 @@ import '../targets/targets_page.dart';
 import '../safebox/safebox_page.dart';
 import '../spend_and_save/spend_and_save_page.dart';
 import '../saving_challenge/saving_challenge_page.dart';
+import 'country_config.dart';
 
 /// FinancePage
 /// The Mamash "Finance" screen: Savings/Loan tabs, a mint-green total
@@ -302,7 +303,7 @@ class _FinancePageState extends State<FinancePage>
                     text: TextSpan(
                       children: [
                         TextSpan(
-                          text: '₦ $wholePart',
+                          text: '${CountryConfig.current.symbol} $wholePart',
                           style: const TextStyle(
                             color: Colors.black,
                             fontSize: 30,
@@ -323,7 +324,7 @@ class _FinancePageState extends State<FinancePage>
                   Row(
                     children: [
                       Text(
-                        '+₦ ${interestToday.toStringAsFixed(2)}',
+                        '+${CountryConfig.current.symbol} ${interestToday.toStringAsFixed(2)}',
                         style: const TextStyle(
                           color: Colors.black87,
                           fontSize: 15,
@@ -350,7 +351,7 @@ class _FinancePageState extends State<FinancePage>
                   children: [
                     Expanded(
                       child: Text(
-                        'Estimate interest ₦${interestEstimate.toStringAsFixed(0)} /month',
+                        'Estimate interest ${CountryConfig.current.symbol}${interestEstimate.toStringAsFixed(0)} /month',
                         style: const TextStyle(
                             color: Colors.black87, fontSize: 12),
                       ),
@@ -381,13 +382,13 @@ class _FinancePageState extends State<FinancePage>
                 style: TextStyle(color: Colors.white54, fontSize: 13),
               ),
               const SizedBox(height: 10),
-              _balanceRow('Wallet', '₦ ${wallet.toStringAsFixed(2)}'),
+              _balanceRow('Wallet', '${CountryConfig.current.symbol} ${wallet.toStringAsFixed(2)}'),
               const SizedBox(height: 10),
               _balanceRow(
                 'OWealth',
-                '₦ ${oWealth.toStringAsFixed(2)}',
+                '${CountryConfig.current.symbol} ${oWealth.toStringAsFixed(2)}',
                 extra: oWealthInterestToday > 0
-                    ? '+₦ ${oWealthInterestToday.toStringAsFixed(2)}'
+                    ? '+${CountryConfig.current.symbol} ${oWealthInterestToday.toStringAsFixed(2)}'
                     : null,
                 onTap: _openTargets,
               ),
@@ -400,14 +401,14 @@ class _FinancePageState extends State<FinancePage>
                 style: TextStyle(color: Colors.white54, fontSize: 13),
               ),
               const SizedBox(height: 10),
-              _balanceRow('Targets', '₦ ${targets.toStringAsFixed(2)}',
+              _balanceRow('Targets', '${CountryConfig.current.symbol} ${targets.toStringAsFixed(2)}',
                   onTap: _openTargets),
               const SizedBox(height: 10),
-              _balanceRow('SafeBox', '₦ ${safeBox.toStringAsFixed(2)}',
+              _balanceRow('SafeBox', '${CountryConfig.current.symbol} ${safeBox.toStringAsFixed(2)}',
                   onTap: _openSafeBox),
               const SizedBox(height: 10),
               _balanceRow(
-                  'Spend & Save', '₦ ${spendAndSave.toStringAsFixed(2)}',
+                  'Spend & Save', '${CountryConfig.current.symbol} ${spendAndSave.toStringAsFixed(2)}',
                   onTap: _openSpendAndSave),
               const SizedBox(height: 8),
               const Center(

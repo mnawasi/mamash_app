@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../country_config.dart';
 
 /// TargetsPage
 /// Lets a user create a named savings target (e.g. "New Phone",
@@ -214,7 +215,7 @@ class _TargetsPageState extends State<TargetsPage> {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            '₦${savedAmount.toStringAsFixed(2)} of ₦${targetAmount.toStringAsFixed(2)}',
+                            '${CountryConfig.current.symbol}${savedAmount.toStringAsFixed(2)} of ${CountryConfig.current.symbol}${targetAmount.toStringAsFixed(2)}',
                             style: const TextStyle(
                                 color: Colors.white54, fontSize: 13),
                           ),

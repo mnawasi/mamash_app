@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'country_config.dart';
 
 class AddMoneyPage extends StatefulWidget {
   const AddMoneyPage({super.key});
@@ -235,7 +236,7 @@ class _AddMoneyPageState extends State<AddMoneyPage> {
             keyboardType: TextInputType.number,
             style: const TextStyle(color: Colors.white, fontSize: 20),
             decoration: InputDecoration(
-              prefixText: '₦ ',
+              prefixText: '${CountryConfig.current.symbol} ',
               prefixStyle: const TextStyle(color: Colors.white, fontSize: 20),
               filled: true,
               fillColor: const Color(0xFF262626),
@@ -259,7 +260,7 @@ class _AddMoneyPageState extends State<AddMoneyPage> {
                     color: const Color(0xFF262626),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Text('₦$amount', style: const TextStyle(color: Colors.white, fontSize: 13)),
+                  child: Text('${CountryConfig.current.symbol}$amount', style: const TextStyle(color: Colors.white, fontSize: 13)),
                 ),
               );
             }).toList(),

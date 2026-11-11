@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'verification_kyc_page.dart';
+import 'country_config.dart';
 
 class Tier3VerificationPage extends StatefulWidget {
   const Tier3VerificationPage({super.key});
@@ -134,7 +135,7 @@ class _Tier3VerificationPageState extends State<Tier3VerificationPage> {
 
   Widget _content() {
     if (_tier >= 3) {
-      return _banner(Icons.verified_user, _green, 'You\'re on Tier 3', 'You can send up to \u20a630,000,000 per day.');
+      return _banner(Icons.verified_user, _green, 'You\'re on Tier 3', 'You can send up to ${CountryConfig.current.symbol}${CountryConfig.groupInt(CountryConfig.current.tierLimits[2])} per day.');
     }
     if (_tier < 2) {
       return Column(

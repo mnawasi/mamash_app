@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../country_config.dart';
 
 class SavingChallengePage extends StatelessWidget {
   const SavingChallengePage({super.key});
@@ -94,7 +95,7 @@ class SavingChallengePage extends StatelessWidget {
                           Expanded(
                             child: _statTile(
                               'Total Saved',
-                              '₦${totalSaved.toStringAsFixed(2)}',
+                              '${CountryConfig.current.symbol}${totalSaved.toStringAsFixed(2)}',
                             ),
                           ),
                         ],

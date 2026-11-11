@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/mamash_giftcard.dart';
 import 'giftcard_service.dart';
+import '../country_config.dart';
 
 class GiftCardsPage extends StatefulWidget {
   const GiftCardsPage({super.key});
@@ -58,7 +59,7 @@ class _GiftCardsPageState extends State<GiftCardsPage> {
       if (i > 0 && (s.length - i) % 3 == 0) b.write(',');
       b.write(s[i]);
     }
-    return '\u20a6$b';
+    return '${CountryConfig.current.symbol}$b';
   }
 
   Future<void> _create() async {

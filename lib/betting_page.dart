@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'country_config.dart';
 
 class BettingPage extends StatefulWidget {
   const BettingPage({super.key});
@@ -91,7 +92,7 @@ class _BettingPageState extends State<BettingPage> {
         backgroundColor: _card,
         title: const Text('Confirm funding', style: TextStyle(color: Colors.white)),
         content: Text(
-          'Fund $_provider\nUser ID: $id\nAmount: \u20a6${_fmt(amt)}\nYou pay: \u20a6${_fmt(pay)}',
+          'Fund $_provider\nUser ID: $id\nAmount: ${CountryConfig.current.symbol}${_fmt(amt)}\nYou pay: ${CountryConfig.current.symbol}${_fmt(pay)}',
           style: const TextStyle(color: Colors.white70, height: 1.5),
         ),
         actions: [
@@ -449,7 +450,7 @@ class _BettingPageState extends State<BettingPage> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Text('NGN (\u20a6)', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                Text('${CountryConfig.current.currencyCode} (${CountryConfig.current.symbol})', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
                 const SizedBox(width: 6),
                 const Icon(Icons.keyboard_arrow_down, color: Colors.white70, size: 20),
               ],
@@ -492,14 +493,14 @@ class _BettingPageState extends State<BettingPage> {
               children: [
                 FittedBox(
                   fit: BoxFit.scaleDown,
-                  child: Text('\u20a6${_fmt(a)}',
+                  child: Text('${CountryConfig.current.symbol}${_fmt(a)}',
                       style: const TextStyle(color: Colors.white, fontSize: 21, fontWeight: FontWeight.w800)),
                 ),
                 if (hasPay) ...[
                   const SizedBox(height: 3),
                   FittedBox(
                     fit: BoxFit.scaleDown,
-                    child: Text('Pay \u20a6${_fmt(_payFor(a))}',
+                    child: Text('Pay ${CountryConfig.current.symbol}${_fmt(_payFor(a))}',
                         style: const TextStyle(color: _green, fontSize: 14, fontWeight: FontWeight.w600)),
                   ),
                 ],
@@ -525,7 +526,7 @@ class _BettingPageState extends State<BettingPage> {
             ),
             child: Row(
               children: [
-                const Text('\u20a6', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800)),
+                Text('${CountryConfig.current.symbol}', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800)),
                 const SizedBox(width: 10),
                 Container(width: 1, height: 28, color: Colors.white24),
                 const SizedBox(width: 12),

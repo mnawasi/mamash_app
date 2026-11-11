@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../country_config.dart';
 
 class SpendAndSavePage extends StatelessWidget {
   const SpendAndSavePage({super.key});
@@ -55,7 +56,7 @@ class SpendAndSavePage extends StatelessWidget {
                           style: TextStyle(color: Colors.black87, fontSize: 14)),
                       const SizedBox(height: 8),
                       Text(
-                        '₦ ${balance.toStringAsFixed(2)}',
+                        '${CountryConfig.current.symbol} ${balance.toStringAsFixed(2)}',
                         style: const TextStyle(
                           color: Colors.black,
                           fontSize: 30,
