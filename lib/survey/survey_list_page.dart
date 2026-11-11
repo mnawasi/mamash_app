@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'survey_page.dart';
+import '../country_config.dart';
 
 class SurveyQuestion {
   final String type;
@@ -161,7 +162,7 @@ class SurveyListPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  '₦${survey.rewardAmount.toStringAsFixed(0)}',
+                  '${CountryConfig.current.symbol}${survey.rewardAmount.toStringAsFixed(0)}',
                   style: const TextStyle(
                       color: _accentGreen, fontSize: 13, fontWeight: FontWeight.w700),
                 ),

@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'survey_list_page.dart';
+import '../country_config.dart';
 
 class SurveyPage extends StatefulWidget {
   final Survey survey;
@@ -99,7 +100,7 @@ class _SurveyPageState extends State<SurveyPage> {
       _showResultDialog(
         success: true,
         message:
-            'Survey completed! ₦${widget.survey.rewardAmount.toStringAsFixed(2)} has been added to your wallet.',
+            'Survey completed! ${CountryConfig.current.symbol}${widget.survey.rewardAmount.toStringAsFixed(2)} has been added to your wallet.',
       );
     } catch (e) {
       if (!mounted) return;

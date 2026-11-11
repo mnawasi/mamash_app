@@ -260,7 +260,7 @@ Rules you must always follow:
       return 'Tap Send on the Home screen, then choose Transfer to Mamash, To Bank or QR Payment.';
     }
     if (has(['limit', 'tier', 'upgrade', 'verify', 'kyc', 'bvn'])) {
-      return 'Your limits depend on your tier: Tier 1 up to \u20a6500,000 per day, Tier 2 up to \u20a65,000,000 and Tier 3 up to \u20a630,000,000. Open Profile, then Transaction Limits to see yours and upgrade.';
+      return 'Your limits depend on your tier: Tier 1 up to ${CountryConfig.current.symbol}${CountryConfig.groupInt(CountryConfig.current.tierLimits[0])} per day, Tier 2 up to ${CountryConfig.current.symbol}${CountryConfig.groupInt(CountryConfig.current.tierLimits[1])} and Tier 3 up to ${CountryConfig.current.symbol}${CountryConfig.groupInt(CountryConfig.current.tierLimits[2])}. Open Profile, then Transaction Limits to see yours and upgrade.';
     }
     if (has(['balance'])) {
       return 'Your balance is shown at the top of the Home screen and on the Wallet page. Tap the eye icon to hide or show it.';

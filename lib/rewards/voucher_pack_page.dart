@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../buy_data_page.dart';
 import '../betting_page.dart';
+import '../country_config.dart';
 
 class VoucherPackPage extends StatefulWidget {
   const VoucherPackPage({super.key});
@@ -19,11 +20,11 @@ class _Voucher {
 
 class _VoucherPackPageState extends State<VoucherPackPage> {
   // Sample vouchers for the UI. Replace with your real vouchers.
-  static const _available = [
-    _Voucher('\u20a640', 'Data Voucher', '\u20a63,000 available', true),
-    _Voucher('\u20a610', 'Data Voucher', '\u20a61,000 available', true),
-    _Voucher('\u20a650', 'Betting Voucher', '\u20a65,000 available', false),
-    _Voucher('\u20a620', 'Betting Voucher', '\u20a62,000 available', false),
+  static List<_Voucher> get _available => [
+    _Voucher('${CountryConfig.current.label(40)}', 'Data Voucher', '${CountryConfig.current.label(3000)} available', true),
+    _Voucher('${CountryConfig.current.label(10)}', 'Data Voucher', '${CountryConfig.current.label(1000)} available', true),
+    _Voucher('${CountryConfig.current.label(50)}', 'Betting Voucher', '${CountryConfig.current.label(5000)} available', false),
+    _Voucher('${CountryConfig.current.label(20)}', 'Betting Voucher', '${CountryConfig.current.label(2000)} available', false),
   ];
 
   static const Color _bg = Color(0xFF03110F);

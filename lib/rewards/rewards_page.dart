@@ -9,6 +9,7 @@ import '../survey_page.dart';
 import 'refer_page.dart';
 import 'play4achild_page.dart';
 import 'voucher_pack_page.dart';
+import '../country_config.dart';
 
 class RewardsPage extends StatefulWidget {
   const RewardsPage({super.key});
@@ -30,13 +31,13 @@ class _RewardsPageState extends State<RewardsPage> {
   static const int _voucherCount = 0;
 
   // Sample vouchers for the UI. Replace with your real vouchers.
-  static const _dataVouchers = [
-    _Voucher('\u20a640', 'Data Voucher', '\u20a63,000 available'),
-    _Voucher('\u20a610', 'Data Voucher', '\u20a61,000 available'),
+  static List<_Voucher> get _dataVouchers => [
+    _Voucher('${CountryConfig.current.label(40)}', 'Data Voucher', '${CountryConfig.current.label(3000)} available'),
+    _Voucher('${CountryConfig.current.label(10)}', 'Data Voucher', '${CountryConfig.current.label(1000)} available'),
   ];
-  static const _bettingVouchers = [
-    _Voucher('\u20a650', 'Betting Voucher', '\u20a65,000 available'),
-    _Voucher('\u20a620', 'Betting Voucher', '\u20a62,000 available'),
+  static List<_Voucher> get _bettingVouchers => [
+    _Voucher('${CountryConfig.current.label(50)}', 'Betting Voucher', '${CountryConfig.current.label(5000)} available'),
+    _Voucher('${CountryConfig.current.label(20)}', 'Betting Voucher', '${CountryConfig.current.label(2000)} available'),
   ];
 
   static const Color _bg = Color(0xFF03110F);
@@ -199,7 +200,7 @@ class _RewardsPageState extends State<RewardsPage> {
             child: _summaryItem(
               _coin(46),
               'Cashback',
-              _hidden ? '\u20a6****' : '\u20a6${_cashback.toStringAsFixed(2)}',
+              _hidden ? '${CountryConfig.current.symbol}****' : '${CountryConfig.current.symbol}${_cashback.toStringAsFixed(2)}',
               'Available balance',
               eye: true,
             ),
@@ -580,8 +581,8 @@ class _RewardsPageState extends State<RewardsPage> {
       ),
       child: Column(
         children: [
-          row(Icons.groups, const [Color(0xFF2BD9A0), Color(0xFF0E8F70)], 'Share App', '+\u20a6200', const Color(0xFF3DE08A),
-              'Help a loved one get an account\nand get \u20a6200 Cashback', () => _goTo(const ReferPage())),
+          row(Icons.groups, const [Color(0xFF2BD9A0), Color(0xFF0E8F70)], 'Share App', '+${CountryConfig.current.label(200)}', const Color(0xFF3DE08A),
+              'Help a loved one get an account\nand get ${CountryConfig.current.label(200)} Cashback', () => _goTo(const ReferPage())),
           row(Icons.smartphone, const [Color(0xFFB36BFF), Color(0xFF6D28D9)], 'Glo Airtime', 'Up to 6%', const Color(0xFF3DE08A),
               'Buy Airtime and get up to 6%\nCashback', () => _goTo(const AirtimePage())),
           row(Icons.description, const [Color(0xFFFFC53D), Color(0xFFB8740A)], 'Pay Bills', 'Earn cashback', const Color(0xFF3DE08A),

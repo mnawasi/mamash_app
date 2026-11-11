@@ -82,8 +82,8 @@ class _BettingPageState extends State<BettingPage> {
     final id = _userId.text.trim();
     final amt = _amount;
     if (id.isEmpty) return _msg('Enter your $_provider user ID');
-    if (amt == null || amt < 100 || amt > 1000000) {
-      return _msg('Enter an amount between \u20a6100 and \u20a61,000,000');
+    if (amt == null || amt < CountryConfig.current.betMin || amt > CountryConfig.current.betMax) {
+      return _msg('Enter an amount between ${CountryConfig.current.symbol}${CountryConfig.current.betMin} and ${CountryConfig.current.symbol}${CountryConfig.groupInt(CountryConfig.current.betMax)}');
     }
     final pay = _payFor(amt);
     final ok = await showDialog<bool>(

@@ -52,6 +52,56 @@ class CountryConfig {
     }
   }
 
+  /// PLACEHOLDER rates: what 1 naira is worth in this currency. Edit them.
+  double get perNgn {
+    switch (name) {
+      case 'Ghana':
+        return 0.0083;
+      case 'Canada':
+        return 0.00097;
+      case 'USA':
+        return 0.00069;
+      case 'England':
+        return 0.00054;
+      default:
+        return 1;
+    }
+  }
+
+  /// A naira price shown in this country's currency, e.g. label(3000).
+  String label(num ngn) {
+    var v = ngn * perNgn;
+    if (v >= 100) {
+      v = (v / 5).round() * 5.0;
+    } else if (v >= 10) {
+      v = v.roundToDouble();
+    } else {
+      v = double.parse(v.toStringAsFixed(2));
+    }
+    final whole = v == v.roundToDouble();
+    final text = whole ? groupInt(v.round()) : v.toStringAsFixed(2);
+    return '$symbol$text';
+  }
+
+  /// Smallest and largest betting-wallet funding amount, in this currency.
+  /// PLACEHOLDERS for the non-Nigerian countries: edit them.
+  int get betMin => name == 'Nigeria' ? 100 : 1;
+
+  int get betMax {
+    switch (name) {
+      case 'Ghana':
+        return 8000;
+      case 'Canada':
+        return 1000;
+      case 'USA':
+        return 700;
+      case 'England':
+        return 500;
+      default:
+        return 1000000;
+    }
+  }
+
   static CountryConfig fromName(String? name) {
     for (final c in all) {
       if (c.name == name) {
