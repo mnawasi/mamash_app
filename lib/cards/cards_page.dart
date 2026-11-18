@@ -1,3 +1,4 @@
+import '../country_config.dart';
 import 'package:mamash_app/main_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -22,6 +23,8 @@ class _CardsPageState extends State<CardsPage> {
   bool _onList = false;
   bool _busy = false;
   bool _loading = true;
+  CountryConfig get _own => CountryConfig.current;
+  CountryConfig get _second => CountryConfig.secondaryFor(CountryConfig.current);
 
   @override
   void initState() {
@@ -46,6 +49,7 @@ class _CardsPageState extends State<CardsPage> {
             }
           }
           onList = d['cardWaitlist'] == true;
+          CountryConfig.fromName(d['country'] as String?);
         }
       } catch (_) {}
     }
@@ -238,7 +242,7 @@ class _CardsPageState extends State<CardsPage> {
                         color: Colors.black.withValues(alpha: 0.25),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Text(physical ? 'PHYSICAL' : (usd ? 'VIRTUAL \u2022 USD' : 'VIRTUAL \u2022 NGN'),
+                      child: Text(physical ? 'PHYSICAL' : 'VIRTUAL \u2022 ${(usd ? _second : _own).currencyCode}',
                           style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
                     ),
                   ],
@@ -302,7 +306,7 @@ class _CardsPageState extends State<CardsPage> {
       );
     }
 
-    return Row(children: [chip('Naira card', '\u{1F1F3}\u{1F1EC}', 0), chip('Dollar card', '\u{1F1FA}\u{1F1F8}', 1)]);
+    return Row(children: [chip('${_own.currencyName} card', _own.flag, 0), chip('${_second.currencyName} card', _second.flag, 1)]);
   }
 
   Widget _actions() {
@@ -386,7 +390,7 @@ class _CardsPageState extends State<CardsPage> {
           const SizedBox(height: 6),
           if (!physical) ...[
             row(Icons.shopping_bag_outlined, 'Pay online', 'Use your card for online shopping and subscriptions'),
-            row(Icons.public, 'Naira and dollar cards', 'Choose the currency that fits what you\'re paying for'),
+            row(Icons.public, '${_own.currencyName} and ${_second.currencyName} cards', 'Choose the currency that fits what you\'re paying for'),
           ] else ...[
             row(Icons.storefront_outlined, 'Pay in stores', 'Tap or swipe at shops and withdraw cash at ATMs'),
             row(Icons.local_shipping_outlined, 'Delivered to you', 'Request a card and have it sent to your address'),
