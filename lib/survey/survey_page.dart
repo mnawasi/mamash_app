@@ -57,8 +57,6 @@ class _SurveyPageState extends State<SurveyPage> {
     final userRef = db.collection('users').doc(uid);
     final responseRef =
         userRef.collection('surveyResponses').doc(widget.survey.id);
-    final financeRef = userRef.collection('finance').doc('summary');
-    final transactionRef = userRef.collection('transactions').doc();
 
     try {
       await db.runTransaction((tx) async {
@@ -67,12 +65,10 @@ class _SurveyPageState extends State<SurveyPage> {
           throw Exception('already_completed');
         }
 
-        final financeSnap = await tx.get(financeRef);
-        final currentWallet =
-            (financeSnap.data()?['wallet'] as num?)?.toDouble() ?? 0.0;
 
         tx.set(responseRef, {
           'surveyId': widget.survey.id,
+          'status': 'pending',
           'title': widget.survey.title,
           'answers': _answers
               .map((a) => a?.toString() ?? '')
@@ -81,26 +77,14 @@ class _SurveyPageState extends State<SurveyPage> {
           'completedAt': FieldValue.serverTimestamp(),
         });
 
-        tx.set(
-          financeRef,
-          {'wallet': currentWallet + widget.survey.rewardAmount},
-          SetOptions(merge: true),
-        );
 
-        tx.set(transactionRef, {
-          'title': 'Survey Reward',
-          'subtitle': widget.survey.title,
-          'amount': widget.survey.rewardAmount,
-          'type': 'credit',
-          'timestamp': FieldValue.serverTimestamp(),
-        });
       });
 
       if (!mounted) return;
       _showResultDialog(
         success: true,
         message:
-            'Survey completed! ${CountryConfig.current.symbol}${widget.survey.rewardAmount.toStringAsFixed(2)} has been added to your wallet.',
+            'Survey completed! ${CountryConfig.current.symbol}${widget.survey.rewardAmount.toStringAsFixed(2)} reward is pending. It will be added to your wallet once confirmed.',
       );
     } catch (e) {
       if (!mounted) return;

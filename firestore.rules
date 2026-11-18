@@ -71,6 +71,23 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Finance summary and transactions: the owner can read. Only the server writes.
+    match /users/{uid}/finance/{doc} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+    }
+    match /users/{uid}/transactions/{tid} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+    }
+
+    // Survey responses: the owner can submit one, always as pending. No edits, no deletes.
+    match /users/{uid}/surveyResponses/{sid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid) && request.resource.data.status == 'pending';
+      allow update, delete: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
