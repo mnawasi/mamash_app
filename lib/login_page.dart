@@ -1,77 +1,171 @@
-import 'package:mamash_app/main_shell.dart';
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:mamash_app/dashboard_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:mamash_app/country_config.dart';
+import 'package:mamash_app/main_shell.dart';
 import 'package:mamash_app/signup_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+const String _kSavedPhone = 'saved_phone';
+const String _kSavedEmail = 'saved_email';
+
+/// Remembers the phone and email on this device so the login page can show them.
+Future<void> rememberLogin(String phone, String email) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kSavedPhone, phone);
+    await prefs.setString(_kSavedEmail, email);
+  } catch (_) {}
+}
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginState();
+  State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginState extends State<LoginPage> {
-  static const Color _bg = Color(0xFF040C0B);
-  static const Color _field = Color(0xFF0B1A1C);
+class _LoginPageState extends State<LoginPage> {
   static const Color _green = Color(0xFF1FE5A0);
+  static const Color _bg = Color(0xFF040C0B);
 
   final _phone = TextEditingController();
-  final _email = TextEditingController();
-  final _password = TextEditingController();
-
-  bool _phoneMode = true;
-  bool _obscure = true;
+  final _pin = TextEditingController();
+  final _pinFocus = FocusNode();
+  String? _savedPhone;
+  String? _savedEmail;
   bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSaved();
+  }
 
   @override
   void dispose() {
     _phone.dispose();
-    _email.dispose();
-    _password.dispose();
+    _pin.dispose();
+    _pinFocus.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadSaved() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (!mounted) return;
+      setState(() {
+        _savedPhone = prefs.getString(_kSavedPhone);
+        _savedEmail = prefs.getString(_kSavedEmail);
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _forgetPhone() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_kSavedPhone);
+      await prefs.remove(_kSavedEmail);
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() {
+      _savedPhone = null;
+      _savedEmail = null;
+      _pin.clear();
+    });
   }
 
   void _msg(String t) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t)));
   }
 
-  Future<String?> _emailForPhone(String input) async {
-    final digits = input.replaceAll(RegExp(r'[^0-9]'), '').replaceFirst(RegExp(r'^0'), '');
-    final variants = ['+234$digits', '234$digits', '0$digits', digits];
+  String _digits(String s) => s.replaceAll(RegExp(r'[^0-9]'), '');
+
+  /// The number without the country code and without a leading zero.
+  String _national(String raw) {
+    final d = _digits(raw);
+    for (final c in CountryConfig.all) {
+      final code = _digits(c.dial);
+      if (d.startsWith(code) && d.length >= code.length + 9) {
+        return d.substring(code.length).replaceFirst(RegExp(r'^0'), '');
+      }
+    }
+    return d.replaceFirst(RegExp(r'^0'), '');
+  }
+
+  String _mask(String raw) {
+    final n = _national(raw);
+    if (n.length <= 4) return n;
+    return n.substring(0, 2) + 'X' * (n.length - 4) + n.substring(n.length - 2);
+  }
+
+  List<String> _variants(String raw) {
+    final all = _digits(raw);
+    final n = _national(raw);
+    final set = <String>{raw.trim(), all, n, '0$n', '+$all'};
+    for (final c in CountryConfig.all) {
+      final d = _digits(c.dial);
+      set.add('+$d$n');
+      set.add('$d$n');
+    }
+    set.removeWhere((e) => e.isEmpty);
+    return set.toList();
+  }
+
+  Future<String?> _emailForPhone(String raw, {bool exact = false}) async {
+    final vars = exact ? [raw] : _variants(raw);
     final users = FirebaseFirestore.instance.collection('users');
     for (final field in ['phoneNumber', 'phone']) {
-      final q = await users.where(field, whereIn: variants).limit(1).get();
+      final q = await users.where(field, whereIn: vars).limit(1).get();
       if (q.docs.isNotEmpty) return q.docs.first.data()['email'] as String?;
     }
     return null;
   }
 
+  String _authMessage(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'wrong-password':
+      case 'invalid-credential':
+      case 'user-not-found':
+        return 'Incorrect PIN. Try again.';
+      case 'too-many-requests':
+        return 'Too many attempts. Try again later.';
+      case 'network-request-failed':
+        return 'No internet connection.';
+      default:
+        return e.message ?? 'Login failed';
+    }
+  }
+
   Future<void> _login() async {
-    final pass = _password.text;
-    if (pass.isEmpty) return _msg('Enter your password');
+    if (_loading) return;
+    final raw = _savedPhone ?? _phone.text.trim();
+    final pin = _pin.text;
+    if (raw.isEmpty) return _msg('Enter your phone number');
+    if (pin.length != 6) return _msg('Enter your 6-digit PIN');
     setState(() => _loading = true);
     try {
-      String? email;
-      if (_phoneMode) {
-        if (_phone.text.trim().isEmpty) {
-          _msg('Enter your phone number');
-          return;
-        }
-        email = await _emailForPhone(_phone.text.trim());
-        if (email == null) {
-          _msg('No account found for this phone number');
-          return;
-        }
-      } else {
-        email = _email.text.trim();
-        if (email.isEmpty) {
-          _msg('Enter your email');
-          return;
-        }
+      String? email = _savedPhone != null ? _savedEmail : null;
+      email ??= await _emailForPhone(raw, exact: _savedPhone != null);
+      if (email == null || email.isEmpty) {
+        _pin.clear();
+        _msg('No account found for this phone number');
+        return;
       }
-      await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: pass);
+      final cred = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: pin);
+      var phone = raw;
+      try {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(cred.user!.uid)
+            .get();
+        final d = doc.data();
+        final p = (d?['phoneNumber'] ?? d?['phone']) as String?;
+        if (p != null && p.trim().isNotEmpty) phone = p.trim();
+      } catch (_) {}
+      await rememberLogin(phone, email);
       if (!mounted) return;
       Navigator.pushAndRemoveUntil(
         context,
@@ -79,8 +173,10 @@ class _LoginState extends State<LoginPage> {
         (_) => false,
       );
     } on FirebaseAuthException catch (e) {
-      _msg(e.message ?? 'Login failed');
+      _pin.clear();
+      _msg(_authMessage(e));
     } catch (_) {
+      _pin.clear();
       _msg('Login failed. Check your connection and try again.');
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -88,20 +184,165 @@ class _LoginState extends State<LoginPage> {
   }
 
   Future<void> _forgot() async {
-    final email = _email.text.trim();
-    if (_phoneMode || email.isEmpty) {
-      return _msg('Switch to Email, enter your email, then tap Forgot password');
-    }
+    final c = TextEditingController(text: _savedEmail ?? '');
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0B1F1A),
+        title: const Text('Reset PIN', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Enter your email and we will send you a reset link.',
+                style: TextStyle(color: Colors.white70)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: c,
+              keyboardType: TextInputType.emailAddress,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                hintText: 'Email',
+                hintStyle: TextStyle(color: Colors.white38),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Send link')),
+        ],
+      ),
+    );
+    final email = c.text.trim();
+    if (ok != true) return;
+    if (email.isEmpty) return _msg('Enter your email');
     try {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-      _msg('Password reset link sent to $email');
+      _msg('Reset link sent to $email');
     } on FirebaseAuthException catch (e) {
       _msg(e.message ?? 'Could not send reset link');
     }
   }
 
+  Widget _row(String label, Widget child, {Widget? trailing}) {
+    return Container(
+      height: 64,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _green.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 104,
+            height: 64,
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.only(left: 22),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.25),
+              borderRadius:
+                  const BorderRadius.horizontal(left: Radius.circular(20)),
+            ),
+            child: Text(label,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600)),
+          ),
+          const SizedBox(width: 24),
+          Expanded(child: child),
+          if (trailing != null)
+            Padding(padding: const EdgeInsets.only(right: 18), child: trailing),
+        ],
+      ),
+    );
+  }
+
+  Widget _usernameField() {
+    final saved = _savedPhone;
+    if (saved != null) {
+      return Text(_mask(saved),
+          style: const TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1));
+    }
+    return TextField(
+      controller: _phone,
+      keyboardType: TextInputType.phone,
+      style: const TextStyle(color: Colors.white, fontSize: 20),
+      decoration: const InputDecoration(
+        border: InputBorder.none,
+        hintText: 'Phone number',
+        hintStyle: TextStyle(color: Colors.white38),
+      ),
+    );
+  }
+
+  Widget _pinField() {
+    return GestureDetector(
+      onTap: () => _pinFocus.requestFocus(),
+      child: SizedBox(
+        height: 64,
+        child: Stack(
+          alignment: Alignment.centerLeft,
+          children: [
+            Positioned.fill(
+              child: TextField(
+                controller: _pin,
+                focusNode: _pinFocus,
+                obscureText: true,
+                keyboardType: TextInputType.number,
+                maxLength: 6,
+                showCursor: false,
+                enableInteractiveSelection: false,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                style: const TextStyle(color: Colors.transparent, fontSize: 1),
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  counterText: '',
+                  contentPadding: EdgeInsets.zero,
+                ),
+                onChanged: (v) {
+                  setState(() {});
+                  if (v.length == 6) _login();
+                },
+              ),
+            ),
+            IgnorePointer(
+              child: Row(
+                children: [
+                  for (int i = 0; i < 6; i++)
+                    Container(
+                      margin: const EdgeInsets.only(right: 12),
+                      width: 16,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: i < _pin.text.length
+                            ? Colors.white
+                            : Colors.transparent,
+                        border: Border.all(color: Colors.white70, width: 1.6),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final saved = _savedPhone;
     return Scaffold(
       backgroundColor: _bg,
       resizeToAvoidBottomInset: true,
@@ -119,365 +360,208 @@ class _LoginState extends State<LoginPage> {
               ),
             ),
           ),
-          Positioned(left: 0, right: 0, bottom: 0, height: 120, child: CustomPaint(painter: _WavePainter())),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 120,
+            child: CustomPaint(painter: _WavePainter()),
+          ),
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(22, 14, 22, 24),
+              padding: const EdgeInsets.fromLTRB(22, 14, 22, 130),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _header(),
-                  const SizedBox(height: 22),
+                  Row(
+                    children: [
+                      Container(
+                        width: 72,
+                        height: 72,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18),
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Color(0xFF1FE5A0), Color(0xFF0E9B63)],
+                          ),
+                        ),
+                        child: const Text('M',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 46,
+                                fontWeight: FontWeight.w800,
+                                fontStyle: FontStyle.italic)),
+                      ),
+                      const SizedBox(width: 16),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          RichText(
+                            text: const TextSpan(
+                              style: TextStyle(
+                                  fontSize: 38, fontWeight: FontWeight.w700),
+                              children: [
+                                TextSpan(
+                                    text: 'Mamash ',
+                                    style: TextStyle(color: Colors.white)),
+                                TextSpan(
+                                    text: 'Pay',
+                                    style: TextStyle(color: _green)),
+                              ],
+                            ),
+                          ),
+                          const Text('FAST  •  SAFE  •  GLOBAL',
+                              style: TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 12,
+                                  letterSpacing: 4)),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 44),
                   RichText(
                     text: const TextSpan(
-                      style: TextStyle(fontSize: 38, fontWeight: FontWeight.w800, color: Colors.white),
+                      style: TextStyle(fontSize: 40, fontWeight: FontWeight.w800),
                       children: [
-                        TextSpan(text: 'Welcome '),
+                        TextSpan(
+                            text: 'Welcome ',
+                            style: TextStyle(color: Colors.white)),
                         TextSpan(text: 'back', style: TextStyle(color: _green)),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   const Text('Log in to continue to your wallet',
-                      style: TextStyle(color: Color(0xFF8C9AA8), fontSize: 16)),
-                  const SizedBox(height: 22),
-                  _toggle(),
+                      style: TextStyle(color: Colors.white54, fontSize: 18)),
+                  const SizedBox(height: 28),
+                  _row('Username', _usernameField()),
                   const SizedBox(height: 16),
-                  _phoneMode ? _phoneField() : _emailField(),
-                  const SizedBox(height: 14),
-                  _passwordField(),
-                  const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: GestureDetector(
+                  _row(
+                    'PIN',
+                    _pinField(),
+                    trailing: GestureDetector(
                       onTap: _forgot,
+                      child: const Text('Forgot?',
+                          style: TextStyle(
+                              color: _green,
+                              fontSize: 16,
+                              decoration: TextDecoration.underline,
+                              decorationColor: _green)),
+                    ),
+                  ),
+                  if (_loading)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 20),
+                      child: Center(
+                          child: CircularProgressIndicator(color: _green)),
+                    ),
+                  if (saved != null) ...[
+                    const SizedBox(height: 40),
+                    Center(
+                      child: Wrap(
+                        alignment: WrapAlignment.center,
+                        children: [
+                          Text('Not ${_mask(saved)} ? ',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w600)),
+                          GestureDetector(
+                            onTap: _forgetPhone,
+                            child: const Text('CLICK HERE',
+                                style: TextStyle(
+                                    color: _green,
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w700,
+                                    decoration: TextDecoration.underline,
+                                    decorationColor: _green)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  Center(
+                    child: GestureDetector(
+                      onTap: () => _msg('Agent locations are coming soon'),
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text('Forgot password?',
-                              style: TextStyle(color: _green, fontSize: 14, fontWeight: FontWeight.w600)),
-                          SizedBox(width: 4),
-                          Icon(Icons.arrow_forward, color: _green, size: 16),
+                          Icon(Icons.location_on, color: Colors.white, size: 26),
+                          SizedBox(width: 6),
+                          Text('Find Agents',
+                              style: TextStyle(
+                                  color: _green,
+                                  fontSize: 17,
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: _green)),
                         ],
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  _loginButton(),
-                  const SizedBox(height: 22),
-                  _orDivider(),
-                  const SizedBox(height: 18),
-                  Center(child: _biometrics()),
-                  const SizedBox(height: 26),
+                  const SizedBox(height: 44),
                   Center(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text("Don't have an account?  ", style: TextStyle(color: Colors.white70, fontSize: 14)),
-                        GestureDetector(
-                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SignupPage())),
-                          child: const Row(
-                            children: [
-                              Text('Sign up',
-                                  style: TextStyle(color: _green, fontSize: 16, fontWeight: FontWeight.w700)),
-                              SizedBox(width: 4),
-                              Icon(Icons.arrow_forward, color: _green, size: 16),
-                            ],
+                    child: GestureDetector(
+                      onTap: () => _msg('Biometric login is coming soon'),
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 110,
+                            height: 110,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: _green, width: 2),
+                              boxShadow: [
+                                BoxShadow(
+                                    color: _green.withValues(alpha: 0.35),
+                                    blurRadius: 24),
+                              ],
+                            ),
+                            child: const Icon(Icons.fingerprint,
+                                color: _green, size: 62),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 14),
+                          const Text('Use biometrics',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700)),
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _header() {
-    return SizedBox(
-      height: 120,
-      child: Stack(
-        children: [
           Positioned(
-            right: -30,
-            top: -10,
-            child: Container(
-              width: 130,
-              height: 130,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const RadialGradient(colors: [Color(0xFF0E3A33), Color(0xFF05140F)]),
-                border: Border.all(color: _green.withValues(alpha: 0.5), width: 1.2),
-                boxShadow: [BoxShadow(color: _green.withValues(alpha: 0.25), blurRadius: 20)],
-              ),
-              child: Icon(Icons.public, color: _green.withValues(alpha: 0.35), size: 80),
-            ),
-          ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 74,
-                height: 74,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(22),
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF3CF0B0), Color(0xFF0FA672)],
-                  ),
-                  boxShadow: [BoxShadow(color: _green.withValues(alpha: 0.4), blurRadius: 16)],
+            left: 0,
+            right: 0,
+            bottom: 30,
+            child: Center(
+              child: GestureDetector(
+                onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const SignupPage())),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text("Don't have an account? ",
+                        style: TextStyle(color: Colors.white, fontSize: 17)),
+                    Text('Sign up',
+                        style: TextStyle(
+                            color: _green,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700)),
+                    SizedBox(width: 6),
+                    Icon(Icons.arrow_forward, color: _green, size: 20),
+                  ],
                 ),
-                child: const Text('M',
-                    style: TextStyle(
-                        color: Colors.white, fontSize: 44, fontWeight: FontWeight.w900, fontStyle: FontStyle.italic)),
-              ),
-              const SizedBox(width: 14),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 6),
-                  RichText(
-                    text: const TextSpan(
-                      style: TextStyle(fontSize: 30, fontWeight: FontWeight.w700, color: Colors.white),
-                      children: [
-                        TextSpan(text: 'Mamash '),
-                        TextSpan(text: 'Pay', style: TextStyle(color: _green)),
-                      ],
-                    ),
-                  ),
-                  const Text('FAST  \u2022  SAFE  \u2022  GLOBAL',
-                      style: TextStyle(color: Color(0xFF7D8A96), fontSize: 11, letterSpacing: 2.2)),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _toggle() {
-    Widget tab(String label, IconData icon, bool selected, VoidCallback onTap) {
-      return Expanded(
-        child: GestureDetector(
-          onTap: onTap,
-          child: Container(
-            height: 48,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(26),
-              gradient: selected
-                  ? const LinearGradient(colors: [Color(0xFF3CF0B0), Color(0xFF14C98B)])
-                  : null,
-              boxShadow: selected ? [BoxShadow(color: _green.withValues(alpha: 0.35), blurRadius: 12)] : null,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 20, color: selected ? Colors.black : Colors.white70),
-                const SizedBox(width: 8),
-                Text(label,
-                    style: TextStyle(
-                        color: selected ? Colors.black : Colors.white70,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700)),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: _field,
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: _green.withValues(alpha: 0.25)),
-      ),
-      child: Row(
-        children: [
-          tab('Phone', Icons.smartphone, _phoneMode, () => setState(() => _phoneMode = true)),
-          tab('Email', Icons.mail, !_phoneMode, () => setState(() => _phoneMode = false)),
-        ],
-      ),
-    );
-  }
-
-  BoxDecoration _fieldBox() => BoxDecoration(
-        color: _field,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _green.withValues(alpha: 0.22)),
-      );
-
-  InputDecoration _hint(String t) => InputDecoration(
-        border: InputBorder.none,
-        hintText: t,
-        hintStyle: const TextStyle(color: Color(0xFF7D8A96), fontSize: 16),
-      );
-
-  Widget _phoneField() {
-    return Container(
-      height: 58,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: _fieldBox(),
-      child: Row(
-        children: [
-          Container(
-            width: 30,
-            height: 20,
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(3)),
-            clipBehavior: Clip.antiAlias,
-            child: Row(
-              children: [
-                Expanded(child: Container(color: const Color(0xFF008751))),
-                Expanded(child: Container(color: Colors.white)),
-                Expanded(child: Container(color: const Color(0xFF008751))),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          const Text('+234', style: TextStyle(color: Colors.white, fontSize: 16)),
-          const Icon(Icons.keyboard_arrow_down, color: Colors.white70, size: 20),
-          const SizedBox(width: 8),
-          Container(width: 1.5, height: 28, color: _green.withValues(alpha: 0.7)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: TextField(
-              controller: _phone,
-              keyboardType: TextInputType.phone,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
-              decoration: _hint('Phone number'),
-            ),
-          ),
-          const Icon(Icons.phone, color: _green, size: 20),
-        ],
-      ),
-    );
-  }
-
-  Widget _emailField() {
-    return Container(
-      height: 58,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: _fieldBox(),
-      child: Row(
-        children: [
-          const Icon(Icons.mail_outline, color: Color(0xFF9FB0C3), size: 22),
-          const SizedBox(width: 12),
-          Expanded(
-            child: TextField(
-              controller: _email,
-              keyboardType: TextInputType.emailAddress,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
-              decoration: _hint('Email address'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _passwordField() {
-    return Container(
-      height: 58,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: _fieldBox(),
-      child: Row(
-        children: [
-          const Icon(Icons.lock, color: Color(0xFF9FB0C3), size: 22),
-          const SizedBox(width: 12),
-          Expanded(
-            child: TextField(
-              controller: _password,
-              obscureText: _obscure,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
-              decoration: _hint('Password'),
-            ),
-          ),
-          GestureDetector(
-            onTap: () => setState(() => _obscure = !_obscure),
-            child: Icon(_obscure ? Icons.visibility_off : Icons.visibility,
-                color: const Color(0xFF9FB0C3), size: 22),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _loginButton() {
-    return GestureDetector(
-      onTap: _loading ? null : _login,
-      child: Container(
-        height: 62,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(32),
-          gradient: const LinearGradient(colors: [Color(0xFF3CF0B0), Color(0xFF14C98B)]),
-          boxShadow: [BoxShadow(color: _green.withValues(alpha: 0.45), blurRadius: 18)],
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            _loading
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.black),
-                  )
-                : const Text('Log in',
-                    style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w800)),
-            Positioned(
-              right: 8,
-              child: Container(
-                width: 46,
-                height: 46,
-                decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF04201A)),
-                child: const Icon(Icons.arrow_forward, color: _green, size: 22),
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _orDivider() {
-    return Row(
-      children: [
-        Expanded(child: Container(height: 1, color: Colors.white24)),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 14),
-          child: Text('Or', style: TextStyle(color: Colors.white70, fontSize: 14)),
-        ),
-        Expanded(child: Container(height: 1, color: Colors.white24)),
-      ],
-    );
-  }
-
-  Widget _biometrics() {
-    return GestureDetector(
-      onTap: () => _msg('Biometric login coming soon...'),
-      child: Column(
-        children: [
-          Container(
-            width: 74,
-            height: 74,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: _field,
-              border: Border.all(color: _green.withValues(alpha: 0.6), width: 1.4),
-              boxShadow: [BoxShadow(color: _green.withValues(alpha: 0.3), blurRadius: 16)],
-            ),
-            child: const Icon(Icons.fingerprint, color: _green, size: 42),
           ),
-          const SizedBox(height: 8),
-          const Text('Use biometrics',
-              style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -487,37 +571,23 @@ class _LoginState extends State<LoginPage> {
 class _WavePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final back = Path()
-      ..moveTo(0, size.height * 0.45)
-      ..quadraticBezierTo(size.width * 0.3, size.height * 0.1, size.width * 0.6, size.height * 0.4)
-      ..quadraticBezierTo(size.width * 0.85, size.height * 0.62, size.width, size.height * 0.3)
+    final path = Path()
+      ..moveTo(0, size.height * 0.35)
+      ..quadraticBezierTo(size.width * 0.25, size.height * 0.05,
+          size.width * 0.55, size.height * 0.30)
+      ..quadraticBezierTo(
+          size.width * 0.80, size.height * 0.50, size.width, size.height * 0.12)
       ..lineTo(size.width, size.height)
       ..lineTo(0, size.height)
       ..close();
     canvas.drawPath(
-      back,
+      path,
       Paint()
-        ..shader = LinearGradient(
+        ..shader = const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [const Color(0xFF1FE5A0).withValues(alpha: 0.35), const Color(0xFF040C0B)],
-        ).createShader(Offset.zero & size),
-    );
-    final front = Path()
-      ..moveTo(0, size.height * 0.7)
-      ..quadraticBezierTo(size.width * 0.4, size.height * 0.45, size.width * 0.7, size.height * 0.7)
-      ..quadraticBezierTo(size.width * 0.9, size.height * 0.85, size.width, size.height * 0.6)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-    canvas.drawPath(
-      front,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [const Color(0xFF14C98B).withValues(alpha: 0.5), const Color(0xFF040C0B)],
-        ).createShader(Offset.zero & size),
+          colors: [Color(0xFF16B97A), Color(0xFF062A22)],
+        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height)),
     );
   }
 

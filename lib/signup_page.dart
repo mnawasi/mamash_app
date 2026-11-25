@@ -1,3 +1,4 @@
+import 'package:mamash_app/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -71,8 +72,8 @@ class _SignupState extends State<SignupPage> {
     if (_country == null) return _msg('Select your country');
     if (digits.length < 7 || digits.length > 11) return _msg('Enter a valid phone number');
     if (_gender == null) return _msg('Select your gender');
-    if (_password.text.length < 8) return _msg('Password must be at least 8 characters');
-    if (_password.text != _confirm.text) return _msg('Passwords do not match');
+    if (!RegExp(r'^\d{6}$').hasMatch(_password.text)) return _msg('PIN must be exactly 6 digits');
+    if (_password.text != _confirm.text) return _msg('PINs do not match');
     if (!_agree) return _msg('Please agree to the Terms & Conditions');
 
     final c = _country!;
@@ -103,6 +104,7 @@ class _SignupState extends State<SignupPage> {
       } catch (e) {
         _msg('Account created, but your profile could not be saved: $e');
       }
+      await rememberLogin(fullPhone, email);
       try {
         await user.sendEmailVerification();
       } catch (_) {}
@@ -305,14 +307,14 @@ class _SignupState extends State<SignupPage> {
           ),
           _shell(
             Icons.lock_outline,
-            'Password',
-            _text(_password, 'Create a strong password', obscure: !_showPass),
+            'PIN',
+            _text(_password, 'Create a 6-digit PIN', obscure: !_showPass),
             trailing: _eye(_showPass, () => setState(() => _showPass = !_showPass)),
           ),
           _shell(
             Icons.lock_reset,
-            'Confirm Password',
-            _text(_confirm, 'Re-enter your password', obscure: !_showConfirm),
+            'Confirm PIN',
+            _text(_confirm, 'Re-enter your PIN', obscure: !_showConfirm),
             trailing: _eye(_showConfirm, () => setState(() => _showConfirm = !_showConfirm)),
           ),
           const SizedBox(height: 2),
