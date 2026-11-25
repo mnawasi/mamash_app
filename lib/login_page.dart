@@ -280,6 +280,8 @@ class _LoginPageState extends State<LoginPage> {
       decoration: const InputDecoration(
         border: InputBorder.none,
         hintText: 'Phone number',
+        filled: false,
+        fillColor: Colors.transparent,
         hintStyle: TextStyle(color: Colors.white38),
       ),
     );
@@ -307,6 +309,8 @@ class _LoginPageState extends State<LoginPage> {
                 decoration: const InputDecoration(
                   border: InputBorder.none,
                   counterText: '',
+                  filled: false,
+                  fillColor: Colors.transparent,
                   contentPadding: EdgeInsets.zero,
                 ),
                 onChanged: (v) {
@@ -439,17 +443,21 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 28),
                   _row('Username', _usernameField()),
                   const SizedBox(height: 16),
-                  _row(
-                    'PIN',
-                    _pinField(),
-                    trailing: GestureDetector(
+                  _row('PIN', _pinField()),
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: GestureDetector(
                       onTap: _forgot,
-                      child: const Text('Forgot?',
-                          style: TextStyle(
-                              color: _green,
-                              fontSize: 16,
-                              decoration: TextDecoration.underline,
-                              decorationColor: _green)),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                        child: Text('Forgot?',
+                            style: TextStyle(
+                                color: _green,
+                                fontSize: 16,
+                                decoration: TextDecoration.underline,
+                                decorationColor: _green)),
+                      ),
                     ),
                   ),
                   if (_loading)
