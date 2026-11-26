@@ -1,3 +1,4 @@
+import 'package:mamash_app/withdraw_page.dart';
 import 'package:flutter/material.dart';
 import 'add_money_page.dart';
 import 'send_money_page.dart';
@@ -380,7 +381,7 @@ class _WalletPageState extends State<WalletPage> {
             const [Color(0xFF3B9BFF), Color(0xFF1D5FE8)], false, () => _goTo(const SendMoneyPage())),
         const SizedBox(width: 8),
         _actionTile(Icons.atm, 'Withdraw', 'Cash out to bank', const Color(0xFF8B5CF6),
-            const [Color(0xFFB36BFF), Color(0xFF6D28D9)], true, () => _msg('Withdraw coming soon...')),
+            const [Color(0xFFB36BFF), Color(0xFF6D28D9)], true, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WithdrawPage()))),
         const SizedBox(width: 8),
         _actionTile(Icons.receipt_long, 'History', 'View all transactions', const Color(0xFFF59E0B),
             const [Color(0xFFFFB23E), Color(0xFFE8890C)], false, () => _goTo(const TransactionHistoryPage())),

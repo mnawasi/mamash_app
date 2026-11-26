@@ -1,3 +1,4 @@
+import 'package:mamash_app/withdraw_page.dart';
 import 'dart:async';
 import 'package:mamash_app/country_config.dart';
 import 'package:mamash_app/convert_page.dart';
@@ -516,7 +517,7 @@ class _DashboardPageState extends State<DashboardPage> {
               left: w / 2 - 4,
               top: sideTop,
               child: _heroTile(sideW, sideH, _wdPts, const [Color(0xFF8A4DFF), Color(0xFF4A1BA8)], const Color(0xFF9B6BFF),
-                  Icons.account_balance_wallet, 'Withdraw', 'To your bank or wallet', () => _soon('Withdraw')),
+                  Icons.account_balance_wallet, 'Withdraw', 'To your bank or wallet', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WithdrawPage()))),
             ),
             Positioned(
               left: (w - sendW) / 2,

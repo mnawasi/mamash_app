@@ -88,6 +88,20 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // Merchants: any signed-in user can read the list. Only you edit it in the console.
+    match /merchants/{mid} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    // Withdrawal requests: the owner can create a pending request and read it. No edits.
+    match /users/{uid}/withdrawals/{wid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid) && request.resource.data.status == 'pending'
+        && request.resource.data.amount is number && request.resource.data.amount > 0;
+      allow update, delete: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
