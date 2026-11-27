@@ -250,25 +250,55 @@ class _GiftCardsPageState extends State<GiftCardsPage> {
 
   final Map<GiftcardType, String> _messages = {
     GiftcardType.favi:
-        'Some people are not just people. They are home.\n\nYou are my peace, my smile, my favourite hello.\nThis is not just a gift card. Na small piece of my heart I send for you.',
+        'I love you more than words fit carry. I want to be with you, to hold your hand through everything, and to make you smile every day.\n\nYou are not just my Favi, you are my home.',
     GiftcardType.mama:
-        'Mama, everything good in me started with you.\n\nYour prayers carried me, your sacrifices built me, and your love never once asked for anything back.\nThis is not just a gift card. It is a small thank you for a lifetime of love.',
+        'Thank you for your prayers, your sacrifice, and your love wey never finish.\n\nI dey pray Allah bless you with long life and good health, make you see me become the man you always pray make I be.\n\nI love you, Mama. Forever.',
     GiftcardType.lucky:
-        'Today, luck found you, but someone thought of you first.\n\nThey wanted to make your day a little brighter and remind you that good things find good people.\nEnjoy this little surprise, and pass the kindness on.',
+        'I no know you, but I choose you today.\nMay this small gift make your day brighter, and may Allah bless you with more than you expect.\n\nYou are Lucky. Stay blessed.',
   };
 
+  // emoji, title, signature (the {name} part is the signed-in user)
   static const Map<GiftcardType, List<String>> _msgHead = {
-    GiftcardType.favi: ['\u2764\uFE0F', 'To My Favi', '\u2014 From someone who thinks about you always'],
-    GiftcardType.mama: ['\u{1F338}', 'To Mama', '\u2014 Your child, who loves you always'],
-    GiftcardType.lucky: ['\u{1F340}', 'To the Lucky One', '\u2014 From someone who wants you to smile'],
+    GiftcardType.favi: ['\u2764\uFE0F', 'To My Favi', '\u2014 {name}'],
+    GiftcardType.mama: ['\u2764\uFE0F', 'To Mama', '\u2014 {name}'],
+    GiftcardType.lucky: ['\u{1F340}', 'To You, Lucky One', '\u2014 From {name}'],
   };
 
-  void _showMessage(GiftcardType t) {
+  String? _senderNameCache;
+
+  Future<String> _senderName() async {
+    if (_senderNameCache != null) return _senderNameCache!;
+    final user = FirebaseAuth.instance.currentUser;
+    var name = user?.displayName ?? '';
+    if (user != null) {
+      try {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        final d = doc.data();
+        for (final k in ['fullName', 'name', 'displayName']) {
+          final v = d?[k];
+          if (v is String && v.trim().isNotEmpty) {
+            name = v.trim();
+            break;
+          }
+        }
+      } catch (_) {}
+    }
+    if (name.isEmpty) name = 'Someone who loves you';
+    _senderNameCache = name;
+    return name;
+  }
+
+  Future<void> _showMessage(GiftcardType t) async {
     final head = _msgHead[t]!;
     final i = _info[t]!;
-    final ctrl = TextEditingController(text: _messages[t]);
     setState(() => _type = t);
-    showDialog<void>(
+    final name = await _senderName();
+    if (!mounted) return;
+    final ctrl = TextEditingController(text: _messages[t]);
+    await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: _panel,
@@ -283,6 +313,7 @@ class _GiftCardsPageState extends State<GiftCardsPage> {
               Text(head[0], style: const TextStyle(fontSize: 48)),
               const SizedBox(height: 8),
               Text(head[1],
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                       color: i.color, fontSize: 21, fontWeight: FontWeight.w800)),
               const SizedBox(height: 12),
@@ -300,12 +331,12 @@ class _GiftCardsPageState extends State<GiftCardsPage> {
                 ),
               ),
               const SizedBox(height: 6),
-              Text(head[2],
+              Text(head[2].replaceAll('{name}', name),
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                       color: Colors.white54,
                       fontStyle: FontStyle.italic,
-                      fontSize: 13)),
+                      fontSize: 13.5)),
               const SizedBox(height: 18),
               SizedBox(
                 width: double.infinity,
