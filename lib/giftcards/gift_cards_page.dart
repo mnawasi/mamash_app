@@ -248,6 +248,92 @@ class _GiftCardsPageState extends State<GiftCardsPage> {
     );
   }
 
+  final Map<GiftcardType, String> _messages = {
+    GiftcardType.favi:
+        'Some people are not just people. They are home.\n\nYou are my peace, my smile, my favourite hello.\nThis is not just a gift card. Na small piece of my heart I send for you.',
+    GiftcardType.mama:
+        'Mama, everything good in me started with you.\n\nYour prayers carried me, your sacrifices built me, and your love never once asked for anything back.\nThis is not just a gift card. It is a small thank you for a lifetime of love.',
+    GiftcardType.lucky:
+        'Today, luck found you, but someone thought of you first.\n\nThey wanted to make your day a little brighter and remind you that good things find good people.\nEnjoy this little surprise, and pass the kindness on.',
+  };
+
+  static const Map<GiftcardType, List<String>> _msgHead = {
+    GiftcardType.favi: ['\u2764\uFE0F', 'To My Favi', '\u2014 From someone who thinks about you always'],
+    GiftcardType.mama: ['\u{1F338}', 'To Mama', '\u2014 Your child, who loves you always'],
+    GiftcardType.lucky: ['\u{1F340}', 'To the Lucky One', '\u2014 From someone who wants you to smile'],
+  };
+
+  void _showMessage(GiftcardType t) {
+    final head = _msgHead[t]!;
+    final i = _info[t]!;
+    final ctrl = TextEditingController(text: _messages[t]);
+    setState(() => _type = t);
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _panel,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: _line),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(head[0], style: const TextStyle(fontSize: 48)),
+              const SizedBox(height: 8),
+              Text(head[1],
+                  style: TextStyle(
+                      color: i.color, fontSize: 21, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 12),
+              TextField(
+                controller: ctrl,
+                maxLines: null,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    color: Colors.white70, fontSize: 14.5, height: 1.45),
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  filled: false,
+                  hintText: 'Write your message',
+                  hintStyle: TextStyle(color: Colors.white38),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(head[2],
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      color: Colors.white54,
+                      fontStyle: FontStyle.italic,
+                      fontSize: 13)),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () {
+                    _messages[t] = ctrl.text;
+                    Navigator.pop(ctx);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _green,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25)),
+                  ),
+                  child: const Text('Send Love Now \u{1F48C}',
+                      style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _send() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -273,7 +359,15 @@ class _GiftCardsPageState extends State<GiftCardsPage> {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), color: i.color.withValues(alpha: 0.2)),
-                    child: Icon(i.icon, color: i.color, size: 26),
+                    child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _showMessage(t),
+                    child: SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Icon(i.icon, color: i.color, size: 26),
+                    ),
+                  ),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
