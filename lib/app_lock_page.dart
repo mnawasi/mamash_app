@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppLockPage extends StatefulWidget {
   final VoidCallback onUnlocked;
@@ -10,41 +12,68 @@ class AppLockPage extends StatefulWidget {
 }
 
 class _AppLockPageState extends State<AppLockPage> {
-  final TextEditingController _passwordController = TextEditingController();
+  static const Color _green = Color(0xFF1FE5A0);
+  static const Color _bg = Color(0xFF040C0B);
+
+  final _pin = TextEditingController();
+  final _password = TextEditingController();
+  final _pinFocus = FocusNode();
+  bool _usePassword = false;
   bool _obscure = true;
   bool _isVerifying = false;
   String? _error;
+  String _masked = '';
 
-  static const Color _bgDark = Color(0xFF121212);
-  static const Color _cardDark = Color(0xFF1E1E1E);
-  static const Color _accentGreen = Color(0xFF1DBF8A);
+  @override
+  void initState() {
+    super.initState();
+    _loadPhone();
+  }
 
-  Future<void> _verifyPassword() async {
+  @override
+  void dispose() {
+    _pin.dispose();
+    _password.dispose();
+    _pinFocus.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadPhone() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('saved_phone') ?? '';
+      var d = raw.replaceAll(RegExp(r'[^0-9]'), '');
+      if (d.length > 10) d = d.substring(d.length - 10);
+      if (d.length > 4) {
+        d = d.substring(0, 2) + 'X' * (d.length - 4) + d.substring(d.length - 2);
+      }
+      if (!mounted) return;
+      setState(() => _masked = d);
+    } catch (_) {}
+  }
+
+  Future<void> _verify(String secret) async {
+    if (_isVerifying) return;
     final user = FirebaseAuth.instance.currentUser;
     final email = user?.email;
-
     if (user == null || email == null) {
-      setState(() => _error = "No signed-in user found.");
+      setState(() => _error = 'No signed-in user found.');
       return;
     }
-
-    if (_passwordController.text.isEmpty) {
-      setState(() => _error = "Please enter your password.");
+    if (secret.isEmpty) {
+      setState(() => _error = _usePassword
+          ? 'Please enter your password.'
+          : 'Please enter your 6-digit PIN.');
       return;
     }
-
     setState(() {
       _isVerifying = true;
       _error = null;
     });
-
     try {
-      final credential = EmailAuthProvider.credential(
-        email: email,
-        password: _passwordController.text,
-      );
+      final credential =
+          EmailAuthProvider.credential(email: email, password: secret);
       await user.reauthenticateWithCredential(credential);
-
       if (!mounted) return;
       widget.onUnlocked();
     } on FirebaseAuthException catch (e) {
@@ -52,120 +81,249 @@ class _AppLockPageState extends State<AppLockPage> {
       switch (e.code) {
         case 'wrong-password':
         case 'invalid-credential':
-          message = "Incorrect password. Try again.";
+          message = _usePassword
+              ? 'Incorrect password. Try again.'
+              : 'Incorrect PIN. Try again.';
           break;
         case 'too-many-requests':
-          message = "Too many attempts. Please wait and try again.";
+          message = 'Too many attempts. Please wait and try again.';
           break;
         case 'network-request-failed':
-          message = "No internet connection.";
+          message = 'No internet connection.';
           break;
         default:
-          message = "Could not verify. Please try again.";
+          message = 'Could not verify. Please try again.';
       }
-      setState(() => _error = message);
-    } catch (e) {
-      setState(() => _error = "Something went wrong. Please try again.");
+      _pin.clear();
+      if (mounted) setState(() => _error = message);
+    } catch (_) {
+      _pin.clear();
+      if (mounted) setState(() => _error = 'Something went wrong. Please try again.');
     } finally {
       if (mounted) setState(() => _isVerifying = false);
     }
   }
 
-  @override
-  void dispose() {
-    _passwordController.dispose();
-    super.dispose();
+  Future<void> _logout() async {
+    await FirebaseAuth.instance.signOut();
+    if (mounted) widget.onUnlocked();
+  }
+
+  Widget _pinCircles() {
+    return GestureDetector(
+      onTap: () => _pinFocus.requestFocus(),
+      child: Container(
+        height: 64,
+        padding: const EdgeInsets.symmetric(horizontal: 22),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: _green.withValues(alpha: 0.3)),
+        ),
+        child: Stack(
+          alignment: Alignment.centerLeft,
+          children: [
+            Positioned.fill(
+              child: TextField(
+                controller: _pin,
+                focusNode: _pinFocus,
+                autofocus: true,
+                obscureText: true,
+                keyboardType: TextInputType.number,
+                maxLength: 6,
+                showCursor: false,
+                enableInteractiveSelection: false,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                style: const TextStyle(color: Colors.transparent, fontSize: 1),
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  counterText: '',
+                  filled: false,
+                  fillColor: Colors.transparent,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                onChanged: (v) {
+                  setState(() => _error = null);
+                  if (v.length == 6) _verify(v);
+                },
+              ),
+            ),
+            IgnorePointer(
+              child: Row(
+                children: [
+                  for (int i = 0; i < 6; i++)
+                    Container(
+                      margin: const EdgeInsets.only(right: 14),
+                      width: 16,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: i < _pin.text.length
+                            ? Colors.white
+                            : Colors.transparent,
+                        border: Border.all(color: Colors.white70, width: 1.6),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _passwordField() {
+    return Container(
+      height: 64,
+      padding: const EdgeInsets.only(left: 22, right: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _green.withValues(alpha: 0.3)),
+      ),
+      child: TextField(
+        controller: _password,
+        obscureText: _obscure,
+        style: const TextStyle(color: Colors.white, fontSize: 18),
+        onSubmitted: _verify,
+        decoration: InputDecoration(
+          border: InputBorder.none,
+          filled: false,
+          fillColor: Colors.transparent,
+          hintText: 'Password',
+          hintStyle: const TextStyle(color: Colors.white38),
+          suffixIcon: IconButton(
+            icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility,
+                color: Colors.white54),
+            onPressed: () => setState(() => _obscure = !_obscure),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bgDark,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: _accentGreen,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Icon(Icons.lock_outline, color: Colors.black, size: 34),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Welcome back',
-                style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'Enter your password to continue',
-                style: TextStyle(color: Colors.white54, fontSize: 14),
-              ),
-              const SizedBox(height: 28),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: BoxDecoration(
-                  color: _cardDark,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: TextField(
-                  controller: _passwordController,
-                  obscureText: _obscure,
-                  style: const TextStyle(color: Colors.white, fontSize: 15),
-                  onSubmitted: (_) => _verifyPassword(),
-                  decoration: InputDecoration(
-                    hintText: 'Password',
-                    hintStyle: const TextStyle(color: Colors.white38),
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                        color: Colors.white54,
-                        size: 20,
-                      ),
-                      onPressed: () => setState(() => _obscure = !_obscure),
+      backgroundColor: _bg,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF062A22), Color(0xFF040C0B), Color(0xFF040C0B)],
+            stops: [0, .4, 1],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(22, 40, 22, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF1FE5A0), Color(0xFF0E9B63)],
                     ),
                   ),
+                  child: const Text('M',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 46,
+                          fontWeight: FontWeight.w800,
+                          fontStyle: FontStyle.italic)),
                 ),
-              ),
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                Text(_error!, style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
+                const SizedBox(height: 36),
+                RichText(
+                  text: const TextSpan(
+                    style: TextStyle(fontSize: 38, fontWeight: FontWeight.w800),
+                    children: [
+                      TextSpan(
+                          text: 'Welcome ', style: TextStyle(color: Colors.white)),
+                      TextSpan(text: 'back', style: TextStyle(color: _green)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                    _usePassword
+                        ? 'Enter your password to continue'
+                        : (_masked.isEmpty
+                            ? 'Enter your PIN to continue'
+                            : 'Enter your PIN for $_masked'),
+                    style: const TextStyle(color: Colors.white54, fontSize: 17)),
+                const SizedBox(height: 28),
+                _usePassword ? _passwordField() : _pinCircles(),
+                if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(_error!,
+                        style: const TextStyle(
+                            color: Color(0xFFFF6B6B), fontSize: 14)),
+                  ),
+                const SizedBox(height: 22),
+                if (_usePassword)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 54,
+                    child: ElevatedButton(
+                      onPressed:
+                          _isVerifying ? null : () => _verify(_password.text),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _green,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(27)),
+                      ),
+                      child: _isVerifying
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.black))
+                          : const Text('Unlock',
+                              style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w700)),
+                    ),
+                  )
+                else if (_isVerifying)
+                  const Center(child: CircularProgressIndicator(color: _green)),
+                const SizedBox(height: 18),
+                Center(
+                  child: TextButton(
+                    onPressed: () => setState(() {
+                      _usePassword = !_usePassword;
+                      _error = null;
+                      _pin.clear();
+                      _password.clear();
+                    }),
+                    child: Text(
+                        _usePassword ? 'Use PIN instead' : 'Use password instead',
+                        style: const TextStyle(
+                            color: _green,
+                            fontSize: 16,
+                            decoration: TextDecoration.underline,
+                            decorationColor: _green)),
+                  ),
+                ),
+                Center(
+                  child: TextButton(
+                    onPressed: _logout,
+                    child: const Text('Log out instead',
+                        style: TextStyle(color: Colors.white54, fontSize: 15)),
+                  ),
+                ),
               ],
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _isVerifying ? null : _verifyPassword,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _accentGreen,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                ),
-                child: _isVerifying
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
-                      )
-                    : const Text('Unlock', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-              ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: () async {
-                  await FirebaseAuth.instance.signOut();
-                },
-                child: const Text('Log out instead', style: TextStyle(color: Colors.white38, fontSize: 13)),
-              ),
-            ],
+            ),
           ),
         ),
       ),
