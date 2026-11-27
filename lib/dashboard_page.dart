@@ -1,3 +1,4 @@
+import 'package:mamash_app/search_page.dart';
 import 'package:mamash_app/withdraw_page.dart';
 import 'dart:async';
 import 'package:mamash_app/country_config.dart';
@@ -316,7 +317,7 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
         ),
         const SizedBox(width: 6),
-        _iconBtn(Icons.search, () => _soon('Search')),
+        _iconBtn(Icons.search, () => _goTo(const SearchPage())),
         const SizedBox(width: 6),
         _iconBtn(Icons.notifications_none, () => _goTo(const NotificationPage()), badge: _unreadNotifications),
         const SizedBox(width: 6),
